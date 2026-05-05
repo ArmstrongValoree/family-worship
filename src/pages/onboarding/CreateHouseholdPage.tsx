@@ -1,43 +1,97 @@
-import { Home } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { Card } from '../../components/ui/Card'
-import { Button } from '../../components/ui/Button'
-import { AppShell } from '../../components/layout/AppShell'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Home, Loader2 } from 'lucide-react'
+import { useAuthContext } from '../../context/AuthContext'
+import { ParadiseBackground } from '../../components/paradise/ParadiseBackground'
+import { supabase } from '../../lib/supabase'
 import { ROUTES } from '../../lib/constants'
 
 export function CreateHouseholdPage() {
+  const { profile } = useAuthContext()
+  const navigate = useNavigate()
+
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!profile) return
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      const { data: household, error: insertError } = await supabase
+        .from('households')
+        .insert({ name: name.trim(), created_by: profile.id })
+        .select()
+        .single()
+
+      if (insertError) throw insertError
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ household_id: household.id })
+        .eq('id', profile.id)
+
+      if (updateError) throw updateError
+
+      navigate(ROUTES.HOME, { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create household. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <AppShell>
-      <div className="px-4 py-6 max-w-lg mx-auto space-y-6">
-        <div className="flex flex-col items-center gap-2 pt-4 text-center">
-          <Home size={36} className="text-paradise-gold" />
-          <h1 className="font-display text-3xl text-paradise-cream">Create Household</h1>
-          <p className="text-paradise-cream/60 text-sm">
-            Set up your family's worship space. Others can join with an invite code.
-          </p>
-        </div>
+    <>
+      <ParadiseBackground />
+      <div className="min-h-dvh flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-6">
 
-        <Card variant="glass" className="space-y-4">
-          <div className="space-y-1">
-            <label className="block text-paradise-cream/80 text-sm font-medium">Household Name</label>
-            <input
-              type="text"
-              placeholder="e.g. The Smith Family"
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-paradise-cream placeholder-paradise-cream/30 focus:outline-none focus:border-paradise-gold/60 text-sm"
-            />
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Home size={44} className="text-paradise-gold" />
+            <h1 className="font-display text-4xl text-paradise-cream">Create Your Household</h1>
+            <p className="text-paradise-green-mist text-sm">Set up your family worship space</p>
           </div>
-          <Button variant="primary" size="md" fullWidth>
-            Create Household
-          </Button>
-        </Card>
 
-        <p className="text-center text-paradise-cream/60 text-sm">
-          Have a code?{' '}
-          <Link to={ROUTES.JOIN} className="text-paradise-gold hover:underline">
-            Join an existing household
-          </Link>
-        </p>
+          <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-3xl p-8">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-paradise-cream/80 text-sm font-medium">Household Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. The Johnson Family"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-paradise-gold transition-colors"
+                />
+              </div>
+
+              {error && (
+                <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-2.5">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-paradise-gold text-paradise-green-deep font-semibold rounded-xl py-3 hover:bg-paradise-gold-light transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <><Loader2 size={18} className="animate-spin" /> Creating…</>
+                ) : (
+                  'Create Household'
+                )}
+              </button>
+            </form>
+          </div>
+
+        </div>
       </div>
-    </AppShell>
+    </>
   )
 }

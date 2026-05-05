@@ -1,71 +1,65 @@
-import { Settings, LogOut, Users, Bell, Shield } from 'lucide-react'
-import { Card } from '../../components/ui/Card'
-import { Avatar } from '../../components/ui/Avatar'
-import { Button } from '../../components/ui/Button'
-import { Badge } from '../../components/ui/Badge'
+import { LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { AppShell } from '../../components/layout/AppShell'
+import { Badge } from '../../components/ui/Badge'
+import { useAuthContext } from '../../context/AuthContext'
+import { useHousehold } from '../../hooks/useHousehold'
+import { ROUTES } from '../../lib/constants'
 
-const MENU_ITEMS = [
-  { icon: Users, label: 'Household Members', desc: 'Manage your household', badge: '2' },
-  { icon: Bell, label: 'Notifications', desc: 'Reminder settings' },
-  { icon: Shield, label: 'Privacy & Security', desc: 'Manage account security' },
-  { icon: Settings, label: 'App Settings', desc: 'Theme, language, and more' },
-]
+function getInitials(name: string): string {
+  const parts = name.trim().split(' ').filter(Boolean)
+  if (parts.length === 1) return parts[0][0].toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
 
 export function ProfilePage() {
+  const { profile, signOut } = useAuthContext()
+  const { household } = useHousehold(profile?.household_id)
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate(ROUTES.LOGIN, { replace: true })
+  }
+
+  const isHH = profile?.role === 'head_of_household'
+
   return (
     <AppShell>
       <div className="px-4 py-6 max-w-lg mx-auto space-y-5">
         <h1 className="font-display text-3xl text-paradise-cream">Profile</h1>
 
         {/* User card */}
-        <Card variant="glass" className="flex items-center gap-4">
-          <Avatar name="Family User" size="lg" />
-          <div className="flex-1 min-w-0">
-            <p className="text-paradise-cream font-semibold text-lg truncate">Family User</p>
-            <p className="text-paradise-cream/50 text-sm truncate">user@example.com</p>
-            <Badge variant="gold" className="mt-1">Household Admin</Badge>
+        <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+          <div className="w-20 h-20 rounded-full bg-paradise-green-deep border-2 border-paradise-gold/50 flex items-center justify-center">
+            <span className="font-display text-3xl text-paradise-gold">
+              {profile ? getInitials(profile.full_name) : '?'}
+            </span>
           </div>
-        </Card>
 
-        {/* Household info */}
-        <Card variant="glass">
-          <p className="text-paradise-cream/50 text-xs uppercase tracking-wide mb-2">Your Household</p>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-paradise-cream font-semibold">The Smith Family</p>
-              <p className="text-paradise-cream/50 text-xs mt-0.5">Invite code: <span className="font-mono tracking-widest text-paradise-gold">ABCD-1234</span></p>
-            </div>
-            <Badge variant="green">2 members</Badge>
+          <div className="space-y-2">
+            <h2 className="font-display text-2xl text-paradise-cream">
+              {profile?.full_name ?? '—'}
+            </h2>
+            {isHH ? (
+              <Badge variant="gold">Head of Household</Badge>
+            ) : (
+              <Badge variant="green">Family Member</Badge>
+            )}
+            {household && (
+              <p className="text-paradise-cream/50 text-sm">{household.name}</p>
+            )}
           </div>
-        </Card>
-
-        {/* Menu */}
-        <div className="space-y-2">
-          {MENU_ITEMS.map(({ icon: Icon, label, desc, badge }) => (
-            <button
-              key={label}
-              className="w-full text-left"
-            >
-              <Card variant="glass" className="flex items-center gap-3 hover:bg-white/20 transition-colors">
-                <div className="p-2 rounded-xl bg-white/10">
-                  <Icon size={18} className="text-paradise-gold" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-paradise-cream text-sm font-semibold">{label}</p>
-                  <p className="text-paradise-cream/50 text-xs">{desc}</p>
-                </div>
-                {badge && <Badge variant="green">{badge}</Badge>}
-              </Card>
-            </button>
-          ))}
         </div>
 
         {/* Sign out */}
-        <Button variant="ghost" size="md" fullWidth className="text-red-400 hover:text-red-300 border-red-400/20">
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center justify-center gap-2 border border-paradise-cream/20 text-paradise-cream/70 hover:text-paradise-cream hover:border-paradise-cream/40 rounded-xl py-3 transition-colors font-medium"
+        >
           <LogOut size={18} />
           Sign Out
-        </Button>
+        </button>
       </div>
     </AppShell>
   )

@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { ROUTES } from './lib/constants'
 
 import { LoginPage } from './pages/auth/LoginPage'
@@ -15,19 +17,25 @@ import { ProfilePage } from './pages/profile/ProfilePage'
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-        <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-        <Route path={ROUTES.JOIN} element={<JoinHouseholdPage />} />
-        <Route path={ROUTES.HOME} element={<DashboardPage />} />
-        <Route path={ROUTES.CREATE_HOUSEHOLD} element={<CreateHouseholdPage />} />
-        <Route path={ROUTES.CALENDAR} element={<CalendarPage />} />
-        <Route path={ROUTES.STUDY} element={<StudyMaterialPage />} />
-        <Route path={ROUTES.TOPICS} element={<TopicSelectionPage />} />
-        <Route path={ROUTES.FEEDBACK} element={<FeedbackPage />} />
-        <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
-        <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+          <Route path={ROUTES.JOIN} element={<JoinHouseholdPage />} />
+
+          {/* Protected routes */}
+          <Route path={ROUTES.HOME} element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path={ROUTES.CREATE_HOUSEHOLD} element={<ProtectedRoute><CreateHouseholdPage /></ProtectedRoute>} />
+          <Route path={ROUTES.CALENDAR} element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+          <Route path={ROUTES.STUDY} element={<ProtectedRoute><StudyMaterialPage /></ProtectedRoute>} />
+          <Route path={ROUTES.TOPICS} element={<ProtectedRoute><TopicSelectionPage /></ProtectedRoute>} />
+          <Route path={ROUTES.FEEDBACK} element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
+          <Route path={ROUTES.PROFILE} element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+          <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
