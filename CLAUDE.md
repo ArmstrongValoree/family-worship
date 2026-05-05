@@ -79,7 +79,7 @@ Never commit .env to git.
 
 ## Phase Tracker
 - [x] Phase 1 — Project scaffold, design system, PWA config
-- [ ] Phase 2 — Supabase setup (auth, tables, RLS)
+- [x] Phase 2 — Supabase setup (auth, tables, RLS)
 - [ ] Phase 3 — Profiles (HH + family member roles)
 - [ ] Phase 4 — Household invite system (link + code)
 - [ ] Phase 5 — Shared calendar + FW events
