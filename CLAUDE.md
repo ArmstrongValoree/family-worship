@@ -81,9 +81,9 @@ Never commit .env to git.
 - [x] Phase 1 — Project scaffold, design system, PWA config
 - [x] Phase 2 — Supabase setup (auth, tables, RLS)
 - [x] Phase 3 — Profiles (HH + family member roles)
-- [ ] Phase 4 — Household invite system (link + code)
-- [ ] Phase 5 — Shared calendar + FW events
-- [ ] Phase 6 — Date change requests
+- [x] Phase 4 — Shared calendar + FW events + date change requests
+- [ ] Phase 5 — Topic selection (dropdown + swipe voting)
+- [ ] Phase 6 — Post-FW rating + private feedback
 - [ ] Phase 7 — JW.org scraper microservice (Railway)
 - [ ] Phase 8 — Study material assignment
 - [ ] Phase 9 — Private per-member instructions

@@ -72,3 +72,13 @@ export interface FeedbackEntry {
   comment?: string
   created_at: string
 }
+
+export interface DateChangeRequest {
+  id: string
+  event_id: string
+  requested_by: string
+  requested_date: string
+  reason?: string
+  status: 'pending' | 'approved' | 'denied'
+  created_at: string
+}
