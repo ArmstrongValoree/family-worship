@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Nunito:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Paradise Color Palette */
+  --paradise-green-deep: #1a3d2b;
+  --paradise-green-mid: #2d6a4f;
+  --paradise-green-light: #52b788;
+  --paradise-green-mist: #d8f3dc;
+  --paradise-gold: #d4a017;
+  --paradise-gold-light: #f4d35e;
+  --paradise-cream: #fdf8f0;
+  --paradise-sand: #e9c46a;
+  --paradise-sky: #90e0ef;
+  --paradise-ocean: #0077b6;
+  --paradise-earth: #6b4226;
+  --paradise-white: #fefefe;
+
+  /* Typography */
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'Nunito', sans-serif;
+
+  /* Spacing */
+  --nav-height: 64px;
+  --bottom-nav-height: 72px;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--paradise-cream);
+  color: var(--paradise-green-deep);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
