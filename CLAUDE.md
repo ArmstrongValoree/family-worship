@@ -85,7 +85,7 @@ Never commit .env to git.
 - [ ] Phase 5 — Topic selection (dropdown + swipe voting)
 - [ ] Phase 6 — Post-FW rating + private feedback
 - [x] Phase 7 — JW.org scraper microservice (Railway)
-- [ ] Phase 8 — Study material assignment
+- [x] Phase 8 — Study material assignment
 - [ ] Phase 9 — Private per-member instructions
 - [ ] Phase 10 — Topic selection (dropdown + swipe voting)
 - [ ] Phase 11 — HH override + alert notifications
