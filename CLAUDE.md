@@ -84,7 +84,7 @@ Never commit .env to git.
 - [x] Phase 4 — Shared calendar + FW events + date change requests
 - [ ] Phase 5 — Topic selection (dropdown + swipe voting)
 - [ ] Phase 6 — Post-FW rating + private feedback
-- [ ] Phase 7 — JW.org scraper microservice (Railway)
+- [x] Phase 7 — JW.org scraper microservice (Railway)
 - [ ] Phase 8 — Study material assignment
 - [ ] Phase 9 — Private per-member instructions
 - [ ] Phase 10 — Topic selection (dropdown + swipe voting)
