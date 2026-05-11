@@ -29,27 +29,50 @@ export function useAuth(): AuthHook {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        setProfile(await fetchProfile(session.user.id))
-      }
-      setLoading(false)
-    })
+    let mounted = true
+
+    // Fallback: if auth resolution hangs (network timeout, DB unresponsive),
+    // unblock the UI after 3 seconds rather than spinning forever.
+    const timeoutId = setTimeout(() => {
+      if (mounted) setLoading(false)
+    }, 3000)
+
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (!mounted) return
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          setProfile(await fetchProfile(session.user.id))
+        }
+        clearTimeout(timeoutId)
+        setLoading(false)
+      })
+      .catch(() => {
+        if (mounted) {
+          clearTimeout(timeoutId)
+          setLoading(false)
+        }
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return
         setUser(session?.user ?? null)
         if (session?.user) {
           setProfile(await fetchProfile(session.user.id))
         } else {
           setProfile(null)
         }
+        clearTimeout(timeoutId)
         setLoading(false)
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function signUp(email: string, password: string, full_name: string, role: UserRole) {

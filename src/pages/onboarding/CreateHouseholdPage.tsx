@@ -7,16 +7,20 @@ import { supabase } from '../../lib/supabase'
 import { ROUTES } from '../../lib/constants'
 
 export function CreateHouseholdPage() {
-  const { profile } = useAuthContext()
+  const { user, profile } = useAuthContext()
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!profile) return
+    if (!profile) {
+      setError('Your profile hasn\'t loaded yet. Please refresh the page and try again.')
+      return
+    }
+    if (!user) return
     setError('')
     setIsSubmitting(true)
 
