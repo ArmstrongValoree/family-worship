@@ -126,7 +126,7 @@ export function DashboardPage() {
                 className="text-paradise-cream/90 leading-snug"
                 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '1.1rem' }}
               >
-                "As for me and my house, we will serve the Lord."
+                "But as for me and my household, we will serve Jehovah."
               </p>
               <p className="text-paradise-gold/70 text-xs mt-1">— Joshua 24:15</p>
             </div>
