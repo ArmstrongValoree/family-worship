@@ -14,7 +14,7 @@ export function JoinHouseholdPage() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!profile) return
     setError('')
@@ -24,7 +24,7 @@ export function JoinHouseholdPage() {
       const { data: household, error: findError } = await supabase
         .from('households')
         .select('id')
-        .eq('invite_code', inviteCode.trim())
+        .eq('invite_code', inviteCode.toLowerCase().trim())
         .single()
 
       if (findError || !household) {
