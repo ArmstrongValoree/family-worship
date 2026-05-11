@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { scrapeJW } from '../scrapers/jwScraper'
 import { scrapeWOL } from '../scrapers/wolScraper'
+import { isApprovedSource } from '../types'
 import type { SearchQuery, ScraperResponse } from '../types'
 
 const router = Router()
@@ -56,6 +57,10 @@ router.get('/article', async (req: Request, res: Response) => {
 
   if (!url || typeof url !== 'string') {
     return res.status(400).json({ error: 'URL parameter is required' })
+  }
+
+  if (!isApprovedSource(url)) {
+    return res.status(403).json({ success: false, error: 'Only JW.org sources are permitted' })
   }
 
   try {

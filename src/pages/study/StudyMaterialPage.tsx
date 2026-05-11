@@ -221,6 +221,10 @@ export function StudyMaterialPage() {
             loading={loading}
           />
 
+          <p className="mt-2 text-paradise-green-light text-xs text-center">
+            All content sourced exclusively from JW.org and the New World Translation
+          </p>
+
           {addSuccess && (
             <p className="mt-3 text-paradise-green-light text-sm">Material added successfully.</p>
           )}

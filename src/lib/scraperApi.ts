@@ -1,5 +1,24 @@
 const SCRAPER_URL = import.meta.env.VITE_SCRAPER_URL || 'http://localhost:3001'
 
+const APPROVED_DOMAINS = [
+  'jw.org',
+  'wol.jw.org',
+  'tv.jw.org',
+  'www.jw.org',
+  'download.jw.org',
+]
+
+export function isApprovedSource(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '')
+    return APPROVED_DOMAINS.some(domain =>
+      hostname === domain || hostname.endsWith('.' + domain)
+    )
+  } catch {
+    return false
+  }
+}
+
 export interface SearchResult {
   title: string
   url: string
@@ -20,7 +39,7 @@ export async function searchJWMaterial(
   const res = await fetch(`${SCRAPER_URL}/search?${params}`)
   if (!res.ok) throw new Error('Scraper request failed')
   const data = await res.json()
-  return data.results as SearchResult[]
+  return (data.results as SearchResult[]).filter(r => isApprovedSource(r.url))
 }
 
 export async function fetchArticleContent(url: string): Promise<{
@@ -28,6 +47,9 @@ export async function fetchArticleContent(url: string): Promise<{
   content: string
   paragraphs: string[]
 }> {
+  if (!isApprovedSource(url)) {
+    throw new Error('Only links from JW.org are permitted as study materials')
+  }
   const params = new URLSearchParams({ url })
   const res = await fetch(`${SCRAPER_URL}/search/article?${params}`)
   if (!res.ok) throw new Error('Failed to fetch article')

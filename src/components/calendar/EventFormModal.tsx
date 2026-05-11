@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, BookOpen, Play, Music, Trash2, Loader2 } from 'lucide-react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useEventForm } from '../../hooks/useEventForm'
+import { isApprovedSource } from '../../lib/scraperApi'
 import type { EventWithMaterials } from '../../hooks/useEvents'
 import type { StudyMaterial } from '../../types'
 
@@ -44,13 +45,22 @@ export function EventFormModal({ householdId, initialDate, event, onClose, onSav
   const [addingType, setAddingType] = useState<StudyMaterial['type'] | null>(null)
   const [draftTitle, setDraftTitle] = useState('')
   const [draftUrl, setDraftUrl] = useState('')
+  const [urlError, setUrlError] = useState('')
+
+  const draftUrlValid = draftUrl === '' || isApprovedSource(draftUrl)
+
+  function handleDraftUrlChange(value: string) {
+    setDraftUrl(value)
+    setUrlError(value && !isApprovedSource(value) ? 'Only links from JW.org are permitted as study materials' : '')
+  }
 
   function confirmAddMaterial() {
-    if (!addingType || !draftTitle || !draftUrl) return
+    if (!addingType || !draftTitle || !draftUrl || !isApprovedSource(draftUrl)) return
     addMaterial({ type: addingType, title: draftTitle.trim(), url: draftUrl.trim() })
     setAddingType(null)
     setDraftTitle('')
     setDraftUrl('')
+    setUrlError('')
   }
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
@@ -165,16 +175,19 @@ export function EventFormModal({ householdId, initialDate, event, onClose, onSav
                 />
                 <input
                   type="url"
-                  placeholder="https://..."
+                  placeholder="https://www.jw.org/..."
                   value={draftUrl}
-                  onChange={e => setDraftUrl(e.target.value)}
+                  onChange={e => handleDraftUrlChange(e.target.value)}
                   className={inputClass}
                 />
+                {urlError && (
+                  <p className="text-red-400 text-xs px-1">{urlError}</p>
+                )}
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={confirmAddMaterial}
-                    disabled={!draftTitle || !draftUrl}
+                    disabled={!draftTitle || !draftUrl || !draftUrlValid}
                     className="flex-1 bg-paradise-gold text-paradise-green-deep text-xs font-semibold rounded-lg py-2 hover:bg-paradise-gold-light transition-colors disabled:opacity-50"
                   >
                     Add

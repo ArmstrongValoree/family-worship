@@ -1,3 +1,22 @@
+export const APPROVED_DOMAINS = [
+  'jw.org',
+  'wol.jw.org',
+  'tv.jw.org',
+  'www.jw.org',
+  'download.jw.org',
+] as const
+
+export function isApprovedSource(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '')
+    return APPROVED_DOMAINS.some(domain =>
+      hostname === domain || hostname.endsWith('.' + domain)
+    )
+  } catch {
+    return false
+  }
+}
+
 export interface SearchResult {
   title: string
   url: string

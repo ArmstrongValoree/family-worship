@@ -91,6 +91,15 @@ Use accurate Jehovah's Witness language throughout the UI. Never use generic sub
 All event title fallbacks must use "Family Worship Evening".
 Study material descriptions should reference JW.org specifically.
 
+## Approved Content Sources
+Only the following sources are permitted in the app:
+- https://www.jw.org
+- https://wol.jw.org
+- https://tv.jw.org
+- https://download.jw.org
+No other religious websites, Bible translations, or third party
+content sources are permitted under any circumstances.
+
 ## Phase Tracker
 - [x] Phase 1 — Project scaffold, design system, PWA config
 - [x] Phase 2 — Supabase setup (auth, tables, RLS)

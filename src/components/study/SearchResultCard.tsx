@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { BookOpen, Play, Music, ExternalLink } from 'lucide-react'
+import { BookOpen, Play, Music, ExternalLink, ShieldCheck } from 'lucide-react'
+import { isApprovedSource } from '../../lib/scraperApi'
 import type { SearchResult } from '../../lib/scraperApi'
 
 const TYPE_ICONS = {
@@ -17,6 +18,8 @@ interface SearchResultCardProps {
 export function SearchResultCard({ result, showAddButton = false, onAdd }: SearchResultCardProps) {
   const [showPanel, setShowPanel] = useState(false)
   const [readAhead, setReadAhead] = useState(false)
+
+  if (!isApprovedSource(result.url)) return null
 
   const Icon = TYPE_ICONS[result.type]
 
@@ -43,6 +46,10 @@ export function SearchResultCard({ result, showAddButton = false, onAdd }: Searc
               <h3 className="font-display text-paradise-cream text-base leading-snug">{result.title}</h3>
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-white/10 text-paradise-cream/60 border border-white/10 shrink-0">
                 {result.source}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-paradise-green-light/10 text-paradise-green-light border border-paradise-green-light/20 shrink-0">
+                <ShieldCheck size={11} />
+                Approved Source
               </span>
             </div>
             {result.publication && (
