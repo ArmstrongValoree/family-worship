@@ -13,7 +13,7 @@ export function FeedbackPage() {
       <div className="px-4 py-6 max-w-lg mx-auto space-y-5">
         <div>
           <h1 className="font-display text-3xl text-paradise-cream">Session Feedback</h1>
-          <p className="text-paradise-cream/60 text-sm mt-1">How did your last worship night go?</p>
+          <p className="text-paradise-cream/60 text-sm mt-1">How did your last Family Worship evening go?</p>
         </div>
 
         {/* Session reference */}

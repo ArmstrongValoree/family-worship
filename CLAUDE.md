@@ -77,6 +77,20 @@ All secrets live in .env (gitignored).
 Reference .env.example for required keys.
 Never commit .env to git.
 
+## JW Terminology Standards
+Use accurate Jehovah's Witness language throughout the UI. Never use generic substitutes.
+
+| Use this | Not this |
+|---|---|
+| Family Worship evening | Family worship night / session / worship night |
+| Family Worship Evening (title case in headings) | Family worship night |
+| Head of Household | admin / leader / organizer |
+| Family member | participant / user |
+| JW.org | the website / jw library |
+
+All event title fallbacks must use "Family Worship Evening".
+Study material descriptions should reference JW.org specifically.
+
 ## Phase Tracker
 - [x] Phase 1 — Project scaffold, design system, PWA config
 - [x] Phase 2 — Supabase setup (auth, tables, RLS)

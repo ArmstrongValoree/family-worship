@@ -52,7 +52,7 @@ export function EventDetailModal({ event, onClose, onEdit, onRequestDateChange }
           <div className="flex items-start justify-between mb-5">
             <div>
               <h2 className="font-display text-2xl text-paradise-cream">
-                {event.title || 'Family Worship Night'}
+                {event.title || 'Family Worship Evening'}
               </h2>
               <p className="text-paradise-gold text-sm mt-1">{dayOfWeek} · {date}</p>
               <p className="text-paradise-cream/50 text-xs">{time}</p>

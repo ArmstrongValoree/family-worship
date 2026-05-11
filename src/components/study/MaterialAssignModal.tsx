@@ -51,7 +51,7 @@ export function MaterialAssignModal({ event, onClose }: MaterialAssignModalProps
           <div>
             <h2 className="font-display text-2xl text-paradise-cream">Add Study Material</h2>
             <p className="text-paradise-cream/50 text-sm mt-0.5 truncate max-w-sm">
-              {event.title || 'Family Worship Night'}
+              {event.title || 'Family Worship Evening'}
             </p>
           </div>
           <button

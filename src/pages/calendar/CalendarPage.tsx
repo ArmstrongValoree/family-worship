@@ -184,10 +184,10 @@ export function CalendarPage() {
 
         {/* Upcoming worship nights */}
         <div>
-          <h2 className="font-display text-xl text-paradise-cream mb-3">Upcoming Worship Nights</h2>
+          <h2 className="font-display text-xl text-paradise-cream mb-3">Upcoming Family Worship Evenings</h2>
           {upcoming.length === 0 ? (
             <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-4 text-paradise-cream/50 text-sm flex items-center gap-2">
-              No upcoming sessions — {isHH ? 'tap Schedule to add one.' : 'your Head of Household will schedule one soon.'}
+              No Family Worship evenings scheduled yet — {isHH ? 'tap Schedule to add one.' : 'your Head of Household will schedule one soon.'}
             </div>
           ) : (
             <div className="space-y-3">

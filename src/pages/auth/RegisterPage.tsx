@@ -25,7 +25,7 @@ export function RegisterPage() {
     if (!loading && user) navigate(ROUTES.HOME, { replace: true })
   }, [user, loading, navigate])
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
     if (password !== confirmPassword) {
@@ -117,13 +117,13 @@ export function RegisterPage() {
                       value: 'head_of_household' as UserRole,
                       icon: Crown,
                       label: 'Head of Household',
-                      desc: 'I manage our family worship schedule',
+                      desc: "I lead our household's Family Worship evenings",
                     },
                     {
                       value: 'family_member' as UserRole,
                       icon: Users,
                       label: 'Family Member',
-                      desc: 'I participate in family worship',
+                      desc: 'I participate in our Family Worship evenings',
                     },
                   ] as const).map(({ value, icon: Icon, label, desc }) => (
                     <button

@@ -53,7 +53,7 @@ export function EventFormModal({ householdId, initialDate, event, onClose, onSav
     setDraftUrl('')
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!profile) return
     try {
@@ -72,7 +72,7 @@ export function EventFormModal({ householdId, initialDate, event, onClose, onSav
       <div className="relative w-full max-w-lg backdrop-blur-lg bg-paradise-green-deep/80 border border-white/20 rounded-3xl p-6 z-10 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="font-display text-2xl text-paradise-cream">
-            {event ? 'Edit Event' : 'Schedule Worship Night'}
+            {event ? 'Edit Event' : 'Schedule Family Worship Evening'}
           </h2>
           <button
             onClick={onClose}

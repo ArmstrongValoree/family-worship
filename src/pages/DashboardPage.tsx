@@ -8,7 +8,7 @@ const quickActions = [
     to: ROUTES.CALENDAR,
     icon: CalendarDays,
     label: 'View Calendar',
-    desc: 'See upcoming sessions',
+    desc: 'Schedule your Family Worship evenings',
     bg: 'bg-paradise-green-mid/60',
     iconColor: 'text-paradise-gold',
   },
@@ -16,7 +16,7 @@ const quickActions = [
     to: ROUTES.STUDY,
     icon: BookOpen,
     label: 'Study Material',
-    desc: 'Prepare for worship',
+    desc: 'Prepare materials from JW.org',
     bg: 'bg-paradise-ocean/40',
     iconColor: 'text-paradise-sky',
   },
@@ -56,7 +56,7 @@ export function DashboardPage() {
               Good morning, Family 🌿
             </h1>
             <p className="text-paradise-cream/70 text-base mt-1">
-              Your next Family Worship is scheduled for{' '}
+              Your next Family Worship evening is coming up{' '}
               <span className="text-paradise-gold font-semibold">Friday at 7:00 PM</span>
             </p>
 

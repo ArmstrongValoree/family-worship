@@ -29,7 +29,7 @@ export function EventCard({ event, onView }: EventCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-paradise-cream font-semibold truncate">
-            {event.title || 'Family Worship Night'}
+            {event.title || 'Family Worship Evening'}
           </p>
           <p className="text-paradise-gold text-sm mt-0.5">{dayOfWeek} · {date}</p>
           <p className="text-paradise-cream/50 text-xs">{time}</p>

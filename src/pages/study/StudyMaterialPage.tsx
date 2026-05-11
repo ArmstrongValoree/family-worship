@@ -29,7 +29,7 @@ function FamilyEventDrawer({ event, onClose }: FamilyEventDrawerProps) {
       <div className="absolute inset-0 bg-paradise-green-deep/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg backdrop-blur-lg bg-paradise-green-deep/80 border border-white/20 rounded-3xl p-6 z-10 max-h-[80vh] overflow-y-auto">
         <h2 className="font-display text-2xl text-paradise-cream mb-1">
-          {event.title || 'Family Worship Night'}
+          {event.title || 'Family Worship Evening'}
         </h2>
         <p className="text-paradise-cream/50 text-sm mb-5">{formatEventDate(event.scheduled_at)}</p>
         <AssignedMaterialList materials={materials} isHH={false} />
@@ -85,7 +85,7 @@ function AddToEventSheet({ result, events, onClose, onSuccess }: AddToEventSheet
           >
             {events.map(ev => (
               <option key={ev.id} value={ev.id} className="bg-paradise-green-deep text-paradise-cream">
-                {ev.title || 'Family Worship Night'} — {formatEventDate(ev.scheduled_at)}
+                {ev.title || 'Family Worship Evening'} — {formatEventDate(ev.scheduled_at)}
               </option>
             ))}
           </select>
@@ -157,6 +157,14 @@ export function StudyMaterialPage() {
           <p className="text-paradise-cream/50 text-sm max-w-xs">
             Join or create a household to access study materials
           </p>
+          <a
+            href="https://www.jw.org/en/library/bible/study-bible/books/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-paradise-gold text-sm hover:underline"
+          >
+            Browse the Bible online
+          </a>
         </div>
       </AppShell>
     )
@@ -167,7 +175,7 @@ export function StudyMaterialPage() {
       <div className="px-4 py-6 max-w-2xl mx-auto space-y-8">
         <div>
           <h1 className="font-display text-3xl text-paradise-cream">Study Materials</h1>
-          <p className="text-paradise-cream/60 text-sm mt-1">Prepare for your next worship session</p>
+          <p className="text-paradise-cream/60 text-sm mt-1">Prepare for your next Family Worship evening</p>
         </div>
 
         {/* Upcoming events row */}
@@ -185,7 +193,7 @@ export function StudyMaterialPage() {
                   className="flex-shrink-0 w-44 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-left hover:bg-white/15 hover:border-paradise-gold/30 transition-colors group"
                 >
                   <p className="font-display text-paradise-cream text-sm leading-snug mb-1 truncate">
-                    {event.title || 'Family Worship Night'}
+                    {event.title || 'Family Worship Evening'}
                   </p>
                   <p className="text-paradise-gold text-xs mb-2">{formatEventDate(event.scheduled_at)}</p>
                   <div className="flex items-center justify-between">
