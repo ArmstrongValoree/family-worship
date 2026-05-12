@@ -1,69 +1,244 @@
-import { Search, Heart } from 'lucide-react'
-import { Card } from '../../components/ui/Card'
-import { Badge } from '../../components/ui/Badge'
+import { useState } from 'react'
+import { Plus, BookOpen, ShieldAlert } from 'lucide-react'
 import { AppShell } from '../../components/layout/AppShell'
-import { TOPIC_CATEGORIES } from '../../lib/constants'
+import { TopicCard } from '../../components/topics/TopicCard'
+import { TopicSwipeCard } from '../../components/topics/TopicSwipeCard'
+import { TopicAddModal } from '../../components/topics/TopicAddModal'
+import { VotingResultsBanner } from '../../components/topics/VotingResultsBanner'
+import { HHOverrideModal } from '../../components/topics/HHOverrideModal'
+import { useAuthContext } from '../../context/AuthContext'
+import { useTopics } from '../../hooks/useTopics'
+import { useTopicVoting } from '../../hooks/useTopicVoting'
+import { useEvents } from '../../hooks/useEvents'
+import { supabase } from '../../lib/supabase'
 
-const SAMPLE_TOPICS = [
-  { title: 'Faith & Trust', category: 'devotional', scripture: 'Proverbs 3:5-6', duration: 30 },
-  { title: 'Family Prayer', category: 'prayer', scripture: 'Matthew 18:20', duration: 20 },
-  { title: 'Fruits of the Spirit', category: 'bible-study', scripture: 'Galatians 5:22-23', duration: 45 },
-  { title: 'Praise & Worship', category: 'song', scripture: 'Psalm 150', duration: 25 },
-  { title: 'Serving Others', category: 'discussion', scripture: 'Mark 10:45', duration: 35 },
-]
+function formatEventDate(isoString: string) {
+  return new Date(isoString).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
 export function TopicSelectionPage() {
+  const { profile } = useAuthContext()
+  const isHH = profile?.role === 'head_of_household'
+  const householdId = profile?.household_id
+
+  const { topics, loading: topicsLoading, addTopic, removeTopic, refetch: refetchTopics } = useTopics(householdId)
+  const { events, refetch: refetchEvents } = useEvents(householdId)
+
+  // Next upcoming event without a topic set
+  const activeEvent = events.find(
+    e => new Date(e.scheduled_at) >= new Date() && !e.topic_id
+  ) ?? null
+
+  const { votes, members, hasEveryoneVoted, agreedTopic, castVote, refetch: refetchVotes } =
+    useTopicVoting(activeEvent?.id, householdId)
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showOverrideModal, setShowOverrideModal] = useState(false)
+  const [votingDeadline, setVotingDeadline] = useState('')
+  const [deadlineSaving, setDeadlineSaving] = useState(false)
+
+  // Topic the current user hasn't voted on yet
+  const unvotedTopic = profile
+    ? topics.find(t => !votes.some(v => v.topic_id === t.id && v.profile_id === profile.id))
+    : null
+
+  async function handleConfirmTopic(topicId: string) {
+    if (!activeEvent) return
+    await supabase
+      .from('family_worship_events')
+      .update({ topic_id: topicId })
+      .eq('id', activeEvent.id)
+    refetchEvents()
+  }
+
+  async function handleStartNewRound() {
+    if (!activeEvent) return
+    const topicIds = topics.map(t => t.id)
+    if (topicIds.length > 0) {
+      await supabase.from('topic_votes').delete().in('topic_id', topicIds)
+    }
+    refetchVotes()
+  }
+
+  async function saveDeadline() {
+    if (!activeEvent || !votingDeadline) return
+    setDeadlineSaving(true)
+    try {
+      const existingNotes = activeEvent.notes ? (() => {
+        try { return JSON.parse(activeEvent.notes ?? '{}') } catch { return {} }
+      })() : {}
+      await supabase
+        .from('family_worship_events')
+        .update({ notes: JSON.stringify({ ...existingNotes, voting_deadline: votingDeadline }) })
+        .eq('id', activeEvent.id)
+      refetchEvents()
+    } finally {
+      setDeadlineSaving(false)
+    }
+  }
+
+  if (!householdId) {
+    return (
+      <AppShell>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center gap-3">
+          <BookOpen size={40} className="text-paradise-gold/60" />
+          <p className="font-display text-xl text-paradise-cream">Family Worship Topics</p>
+          <p className="text-paradise-cream/50 text-sm max-w-xs">
+            Join or create a household to manage topics
+          </p>
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell>
-      <div className="px-4 py-6 max-w-lg mx-auto space-y-5">
+      <div className="px-4 py-6 max-w-2xl mx-auto space-y-8">
+
         <div>
-          <h1 className="font-display text-3xl text-paradise-cream">Topics</h1>
-          <p className="text-paradise-cream/60 text-sm mt-1">Choose a focus for your next session</p>
+          <h1 className="font-display text-3xl text-paradise-cream">Family Worship Topics</h1>
+          <p className="text-paradise-cream/60 text-sm mt-1">Vote on topics for your next evening</p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-paradise-cream/40" />
-          <input
-            type="text"
-            placeholder="Search topics..."
-            className="w-full bg-white/10 border border-white/20 rounded-xl pl-9 pr-4 py-2.5 text-paradise-cream placeholder-paradise-cream/30 focus:outline-none focus:border-paradise-gold/60 text-sm"
-          />
-        </div>
+        {/* Active voting round */}
+        {activeEvent && (
+          <section className="space-y-4">
+            <div>
+              <p className="text-paradise-gold text-xs font-semibold uppercase tracking-widest mb-0.5">
+                Active Voting Round
+              </p>
+              <p className="font-display text-xl text-paradise-cream">
+                {activeEvent.title || 'Family Worship Evening'} —{' '}
+                {formatEventDate(activeEvent.scheduled_at)}
+              </p>
+            </div>
 
-        {/* Category filters */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button className="shrink-0 px-3 py-1.5 rounded-full bg-paradise-gold text-paradise-green-deep text-xs font-semibold">
-            All
-          </button>
-          {TOPIC_CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              className="shrink-0 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-paradise-cream/70 text-xs font-medium hover:bg-white/20 transition-colors"
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
+            <VotingResultsBanner
+              topics={topics}
+              votes={votes}
+              members={members}
+              hasEveryoneVoted={hasEveryoneVoted}
+              agreedTopic={agreedTopic}
+              isHH={isHH}
+              onConfirmTopic={handleConfirmTopic}
+              onStartNewRound={handleStartNewRound}
+            />
 
-        {/* Topics list */}
-        <div className="space-y-3">
-          {SAMPLE_TOPICS.map((topic) => (
-            <Card key={topic.title} variant="glass" className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-paradise-cream font-semibold text-sm">{topic.title}</p>
-                  <Badge variant="mist" className="capitalize">{topic.category.replace('-', ' ')}</Badge>
+            {unvotedTopic && !hasEveryoneVoted && (
+              <TopicSwipeCard
+                topic={unvotedTopic}
+                onVote={vote => castVote(unvotedTopic.id, vote)}
+              />
+            )}
+
+            {!unvotedTopic && !hasEveryoneVoted && topics.length > 0 && (
+              <p className="text-paradise-cream/50 text-sm text-center py-4">
+                You have voted on all topics — waiting for others.
+              </p>
+            )}
+
+            {isHH && (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setShowOverrideModal(true)}
+                  className="flex items-center gap-2 text-paradise-cream/60 hover:text-paradise-cream transition-colors text-sm"
+                >
+                  <ShieldAlert size={15} />
+                  Override Selection
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <label className="text-paradise-cream/50 text-xs font-semibold uppercase tracking-wide shrink-0">
+                    Voting deadline
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={votingDeadline}
+                    onChange={e => setVotingDeadline(e.target.value)}
+                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-paradise-cream text-xs focus:outline-none focus:border-paradise-gold transition-colors"
+                  />
+                  <button
+                    onClick={saveDeadline}
+                    disabled={!votingDeadline || deadlineSaving}
+                    className="bg-paradise-gold text-paradise-green-deep text-xs font-semibold rounded-xl px-3 py-2 hover:bg-paradise-gold-light transition-colors disabled:opacity-50 shrink-0"
+                  >
+                    {deadlineSaving ? 'Saving…' : 'Set'}
+                  </button>
                 </div>
-                <p className="text-paradise-cream/50 text-xs mt-1">{topic.scripture} · {topic.duration} min</p>
               </div>
-              <button className="shrink-0 p-1.5 rounded-lg text-paradise-cream/40 hover:text-paradise-gold transition-colors">
-                <Heart size={18} />
+            )}
+          </section>
+        )}
+
+        {/* Topic library */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl text-paradise-cream">Your Topic Library</h2>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 bg-paradise-gold text-paradise-green-deep text-sm font-semibold px-3 py-2 rounded-xl hover:bg-paradise-gold-light transition-colors"
+            >
+              <Plus size={15} />
+              Add Topic
+            </button>
+          </div>
+
+          {topicsLoading ? (
+            <p className="text-paradise-cream/40 text-sm text-center py-6">Loading…</p>
+          ) : topics.length === 0 ? (
+            <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-8 text-center space-y-2">
+              <BookOpen size={32} className="text-paradise-gold/50 mx-auto" />
+              <p className="text-paradise-cream/60 text-sm">
+                No topics added yet — add your first topic from JW.org
+              </p>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="mt-2 text-paradise-gold text-sm hover:underline"
+              >
+                Add a topic
               </button>
-            </Card>
-          ))}
-        </div>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {topics.map(topic => (
+                <TopicCard
+                  key={topic.id}
+                  topic={topic}
+                  votes={votes}
+                  members={members}
+                  isHH={isHH}
+                  onRemove={isHH ? removeTopic : undefined}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
+
+      {showAddModal && householdId && (
+        <TopicAddModal
+          householdId={householdId}
+          onAdd={async (topic) => {
+            await addTopic(topic)
+            refetchTopics()
+          }}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {showOverrideModal && activeEvent && profile && (
+        <HHOverrideModal
+          event={activeEvent}
+          topics={topics}
+          profile={profile}
+          onClose={() => setShowOverrideModal(false)}
+          onOverridden={() => { refetchEvents(); refetchVotes() }}
+        />
+      )}
     </AppShell>
   )
 }

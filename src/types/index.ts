@@ -82,3 +82,12 @@ export interface DateChangeRequest {
   status: 'pending' | 'approved' | 'denied'
   created_at: string
 }
+
+export interface Notification {
+  id: string
+  household_id: string
+  message: string
+  created_by: string
+  read_by: string[]
+  created_at: string
+}
