@@ -190,9 +190,6 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
           <div className="space-y-2">
             {results.map((result, i) => {
               const isRef = isScriptureRef(result.title)
-              const primaryTitle = isRef && result.snippet ? result.snippet : result.title
-              const secondaryText = isRef ? result.title : null
-              const descriptionText = !isRef ? result.snippet : null
               return (
                 <button
                   key={i}
@@ -201,21 +198,29 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
                   className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 hover:border-paradise-gold/30 rounded-2xl p-4 transition-colors group disabled:opacity-60"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <p className="font-display text-paradise-cream text-base leading-snug">{primaryTitle}</p>
+                    <div className="flex-1 min-w-0 space-y-1.5">
+
+                      {/* Article title or scripture reference */}
+                      <div className="flex items-start gap-2 flex-wrap">
+                        {isRef ? (
+                          <p className="text-paradise-gold text-sm font-semibold leading-snug">{result.title}</p>
+                        ) : (
+                          <p className="font-display text-paradise-cream text-lg leading-snug">{result.title}</p>
+                        )}
                         {result.source && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-paradise-cream/50 border border-white/10 shrink-0">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-paradise-cream/50 border border-white/10 shrink-0 mt-0.5">
                             {result.source}
                           </span>
                         )}
                       </div>
-                      {secondaryText && (
-                        <p className="text-paradise-cream/40 text-[10px] mb-1">{secondaryText}</p>
+
+                      {/* Paragraph excerpt — always shown */}
+                      {result.snippet && (
+                        <p className="text-paradise-green-mist text-xs leading-relaxed line-clamp-3">
+                          {result.snippet}
+                        </p>
                       )}
-                      {descriptionText && (
-                        <p className="text-paradise-cream/50 text-xs line-clamp-2">{descriptionText}</p>
-                      )}
+
                     </div>
                     <div className="shrink-0 text-paradise-gold/40 group-hover:text-paradise-gold transition-colors text-xs font-semibold mt-0.5">
                       {savingUrl === result.url
