@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Search, Loader2, CheckCircle, BookOpen } from 'lucide-react'
+import { X, Search, Loader2, CheckCircle, BookOpen, Play, Music } from 'lucide-react'
 import { searchJWMaterial, fetchTopicsFromURL } from '../../lib/scraperApi'
 import type { TopicResult } from '../../lib/scraperApi'
 import type { Topic } from '../../types'
@@ -71,7 +71,7 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
     setResults([])
     try {
       const items = await searchJWMaterial(searchQuery.trim(), 'all', 8)
-      setResults(dedupeByUrl(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source }))))
+      setResults(dedupeByUrl(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source, type: r.type, thumbnail: r.thumbnail, category: r.category }))))
     } catch {
       setResults([])
     } finally {
@@ -86,7 +86,7 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
     setResults([])
     try {
       const items = await searchJWMaterial(category, 'all', 8)
-      setResults(dedupeByUrl(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source }))))
+      setResults(dedupeByUrl(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source, type: r.type, thumbnail: r.thumbnail, category: r.category }))))
     } catch {
       setResults([])
     } finally {
@@ -190,6 +190,7 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
           <div className="space-y-2">
             {results.map((result, i) => {
               const isRef = isScriptureRef(result.title)
+              const TypeIcon = result.type === 'video' ? Play : result.type === 'song' ? Music : BookOpen
               return (
                 <button
                   key={i}
@@ -197,8 +198,29 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
                   disabled={savingUrl === result.url}
                   className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 hover:border-paradise-gold/30 rounded-2xl p-4 transition-colors group disabled:opacity-60"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-start gap-3">
+
+                    {/* Thumbnail or type icon */}
+                    {result.thumbnail ? (
+                      <img
+                        src={result.thumbnail}
+                        alt=""
+                        className="w-10 h-10 rounded-lg object-cover shrink-0 mt-0.5"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <TypeIcon size={16} className="text-paradise-cream/40" />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0 space-y-1">
+
+                      {/* Category label */}
+                      {result.category && (
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-paradise-green-light/70 leading-none">
+                          {result.category}
+                        </p>
+                      )}
 
                       {/* Article title or scripture reference */}
                       <div className="flex items-start gap-2 flex-wrap">
@@ -214,14 +236,15 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
                         )}
                       </div>
 
-                      {/* Paragraph excerpt — always shown */}
+                      {/* Paragraph excerpt */}
                       {result.snippet && (
-                        <p className="text-paradise-green-mist text-xs leading-relaxed line-clamp-3">
+                        <p className="text-paradise-green-mist text-xs leading-relaxed line-clamp-2">
                           {result.snippet}
                         </p>
                       )}
 
                     </div>
+
                     <div className="shrink-0 text-paradise-gold/40 group-hover:text-paradise-gold transition-colors text-xs font-semibold mt-0.5">
                       {savingUrl === result.url
                         ? <Loader2 size={14} className="animate-spin text-paradise-gold" />

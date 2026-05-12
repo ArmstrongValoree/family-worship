@@ -28,6 +28,7 @@ export interface SearchResult {
   thumbnail?: string
   publication?: string
   date?: string
+  category?: string
 }
 
 export async function searchJWMaterial(
@@ -47,6 +48,9 @@ export interface TopicResult {
   url: string
   snippet: string
   source?: string
+  type?: 'article' | 'video' | 'song'
+  thumbnail?: string
+  category?: string
 }
 
 export async function fetchTopicsFromURL(url: string): Promise<TopicResult[]> {
