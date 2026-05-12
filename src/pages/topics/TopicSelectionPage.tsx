@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, BookOpen, ShieldAlert } from 'lucide-react'
+import { useState, useMemo, useRef } from 'react'
+import { Plus, BookOpen, ShieldAlert, Loader2 } from 'lucide-react'
 import { AppShell } from '../../components/layout/AppShell'
 import { TopicCard } from '../../components/topics/TopicCard'
 import { TopicSwipeCard } from '../../components/topics/TopicSwipeCard'
@@ -23,10 +23,17 @@ function formatEventDate(isoString: string) {
 export function TopicSelectionPage() {
   const { profile } = useAuthContext()
   const isHH = profile?.role === 'head_of_household'
-  const householdId = profile?.household_id
 
-  const { topics, loading: topicsLoading, addTopic, removeTopic, refetch: refetchTopics } = useTopics(householdId)
-  const { events, refetch: refetchEvents } = useEvents(householdId)
+  // Memoize so hooks don't re-run on every auth context update
+  const householdId = useMemo(() => profile?.household_id, [profile?.household_id])
+
+  // Persist the last known value — prevents flash to empty state during auth re-fires
+  const lastKnownHouseholdId = useRef<string | undefined>(undefined)
+  if (householdId) lastKnownHouseholdId.current = householdId
+  const stableHouseholdId = lastKnownHouseholdId.current ?? householdId
+
+  const { topics, loading: topicsLoading, addTopic, removeTopic, refetch: refetchTopics } = useTopics(stableHouseholdId)
+  const { events, refetch: refetchEvents } = useEvents(stableHouseholdId)
 
   // Next upcoming event without a topic set
   const activeEvent = events.find(
@@ -81,7 +88,19 @@ export function TopicSelectionPage() {
     }
   }
 
-  if (!householdId) {
+  // Profile hasn't arrived yet — show spinner rather than flashing empty state
+  if (!profile && !stableHouseholdId) {
+    return (
+      <AppShell>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 size={32} className="text-paradise-gold animate-spin" />
+        </div>
+      </AppShell>
+    )
+  }
+
+  // Profile loaded but user has no household
+  if (!stableHouseholdId) {
     return (
       <AppShell>
         <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center gap-3">
@@ -219,9 +238,9 @@ export function TopicSelectionPage() {
         </section>
       </div>
 
-      {showAddModal && householdId && (
+      {showAddModal && (
         <TopicAddModal
-          householdId={householdId}
+          householdId={stableHouseholdId}
           onAdd={async (topic) => {
             await addTopic(topic)
             refetchTopics()

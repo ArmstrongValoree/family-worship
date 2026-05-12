@@ -1,7 +1,31 @@
-import { useState } from 'react'
-import { X, Check, Search, Loader2 } from 'lucide-react'
-import { isApprovedSource, searchJWMaterial, type SearchResult } from '../../lib/scraperApi'
+import { useState, useEffect } from 'react'
+import { X, Search, Loader2, CheckCircle, BookOpen } from 'lucide-react'
+import { searchJWMaterial, fetchTopicsFromURL } from '../../lib/scraperApi'
+import type { TopicResult } from '../../lib/scraperApi'
 import type { Topic } from '../../types'
+
+const WOL_URLS = [
+  'https://wol.jw.org/en/wol/d/r1/lp-e/1204362',
+  'https://wol.jw.org/en/wol/d/r1/lp-e/1102021613',
+]
+
+const FALLBACK_CATEGORIES = [
+  'Prayer and Worship',
+  'Bible Study',
+  'Faith and Trust in Jehovah',
+  'Family Life',
+  'Preaching and Teaching',
+  'Christian Qualities',
+  'Endurance Through Trials',
+  "Jehovah's Promises",
+  'The Kingdom of God',
+  'Moral Cleanness',
+  'Love for Neighbors',
+  'Youth and Teenagers',
+  'Marriage and Singleness',
+  'Death and the Resurrection',
+  "Jehovah's Organization",
+]
 
 interface TopicAddModalProps {
   householdId: string
@@ -10,191 +34,190 @@ interface TopicAddModalProps {
 }
 
 export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProps) {
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [sourceUrl, setSourceUrl] = useState('')
-  const [urlError, setUrlError] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [results, setResults] = useState<TopicResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [savingUrl, setSavingUrl] = useState<string | null>(null)
+  const [successTitle, setSuccessTitle] = useState<string | null>(null)
+  const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES)
 
-  const urlValid = sourceUrl === '' || isApprovedSource(sourceUrl)
-
-  function handleUrlChange(value: string) {
-    setSourceUrl(value)
-    setUrlError(value && !isApprovedSource(value) ? 'Only links from JW.org are permitted' : '')
-  }
+  useEffect(() => {
+    let mounted = true
+    Promise.all(
+      WOL_URLS.map(url => fetchTopicsFromURL(url).catch(() => [] as TopicResult[]))
+    ).then(results => {
+      if (!mounted) return
+      const titles = results.flat().map(r => r.title).filter(t => t.length > 3)
+      if (titles.length > 0) setCategories(titles.slice(0, 30))
+    })
+    return () => { mounted = false }
+  }, [])
 
   async function handleSearch() {
     if (!searchQuery.trim()) return
     setSearching(true)
+    setResults([])
     try {
-      const results = await searchJWMaterial(searchQuery.trim(), 'all', 8)
-      setSearchResults(results)
+      const items = await searchJWMaterial(searchQuery.trim(), 'all', 8)
+      setResults(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source })))
     } catch {
-      setSearchResults([])
+      setResults([])
     } finally {
       setSearching(false)
     }
   }
 
-  function applyResult(result: SearchResult) {
-    setTitle(result.title)
-    setSourceUrl(result.url)
-    setUrlError('')
-    setSearchResults([])
-    setSearchQuery('')
+  async function handleCategorySelect(category: string) {
+    setSelectedCategory(category)
+    if (!category) return
+    setSearching(true)
+    setResults([])
+    try {
+      const items = await searchJWMaterial(category, 'all', 8)
+      setResults(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source })))
+    } catch {
+      setResults([])
+    } finally {
+      setSearching(false)
+    }
   }
 
-  async function handleSave() {
-    if (!title.trim()) return
-    if (sourceUrl && !isApprovedSource(sourceUrl)) {
-      setUrlError('Only links from JW.org are permitted')
-      return
-    }
-    setSaving(true)
-    setError('')
+  async function handleAddTopic(result: TopicResult) {
+    setSavingUrl(result.url)
     try {
       await onAdd({
         household_id: householdId,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        source_url: sourceUrl.trim() || undefined,
+        title: result.title,
+        description: result.snippet || undefined,
+        source_url: result.url || undefined,
       })
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add topic')
+      setSuccessTitle(result.title)
+      setTimeout(() => setSuccessTitle(null), 3000)
     } finally {
-      setSaving(false)
+      setSavingUrl(null)
     }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-paradise-green-deep/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg backdrop-blur-lg bg-paradise-green-deep/90 border border-white/20 rounded-3xl p-6 z-10 max-h-[90vh] overflow-y-auto space-y-4">
+      <div className="relative w-full max-w-lg backdrop-blur-lg bg-paradise-green-deep/90 border border-white/20 rounded-3xl p-6 z-10 max-h-[90vh] overflow-y-auto space-y-5">
 
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-2xl text-paradise-cream">Add a Topic</h2>
-          <button onClick={onClose} className="p-2 rounded-xl text-paradise-cream/50 hover:text-paradise-cream hover:bg-white/10 transition-colors">
+          <h2 className="font-display text-2xl text-paradise-cream">Search for a Topic</h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-paradise-cream/50 hover:text-paradise-cream hover:bg-white/10 transition-colors"
+          >
             <X size={20} />
           </button>
         </div>
 
-        {/* JW.org search */}
-        <div className="space-y-2">
-          <label className="block text-paradise-cream/60 text-xs font-semibold uppercase tracking-wide">
-            Search JW.org for a topic
-          </label>
+        {/* Success toast */}
+        {successTitle && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-paradise-green-light/10 border border-paradise-green-light/30">
+            <CheckCircle size={15} className="text-paradise-green-light shrink-0" />
+            <p className="text-paradise-green-light text-sm truncate">
+              "{successTitle}" added to your library ✓
+            </p>
+          </div>
+        )}
+
+        {/* Search options */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Text search */}
           <div className="flex gap-2">
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="e.g. faith, prayer, endurance…"
-              className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-paradise-cream placeholder:text-white/40 focus:outline-none focus:border-paradise-gold transition-colors text-sm"
+              placeholder="e.g. prayer, faith, endurance…"
+              className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-paradise-cream placeholder:text-white/40 focus:outline-none focus:border-paradise-gold transition-colors text-sm"
             />
             <button
               onClick={handleSearch}
               disabled={searching || !searchQuery.trim()}
-              className="bg-paradise-gold text-paradise-green-deep font-semibold rounded-xl px-4 py-2.5 hover:bg-paradise-gold-light transition-colors disabled:opacity-50 flex items-center gap-1.5 text-sm shrink-0"
+              className="bg-paradise-gold text-paradise-green-deep font-semibold rounded-xl px-3 py-2.5 hover:bg-paradise-gold-light transition-colors disabled:opacity-50 flex items-center gap-1 text-sm shrink-0"
             >
-              {searching ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
-              Search
+              {searching && !selectedCategory
+                ? <Loader2 size={15} className="animate-spin" />
+                : <Search size={15} />
+              }
             </button>
           </div>
 
-          {searchResults.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {searchResults.map((r, i) => (
-                <button
-                  key={i}
-                  onClick={() => applyResult(r)}
-                  className="px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-paradise-cream/80 text-xs hover:bg-paradise-gold/20 hover:border-paradise-gold/40 hover:text-paradise-cream transition-colors text-left truncate max-w-[200px]"
-                  title={r.title}
-                >
-                  {r.title}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Category dropdown */}
+          <select
+            value={selectedCategory}
+            onChange={e => handleCategorySelect(e.target.value)}
+            className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-paradise-cream focus:outline-none focus:border-paradise-gold transition-colors appearance-none text-sm"
+          >
+            <option value="" className="bg-paradise-green-deep text-paradise-cream/50">
+              Browse by category…
+            </option>
+            {categories.map(cat => (
+              <option key={cat} value={cat} className="bg-paradise-green-deep text-paradise-cream">
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="border-t border-white/10" />
-
-        {/* Manual fields */}
-        <div className="space-y-1.5">
-          <label className="block text-paradise-cream/60 text-xs font-semibold uppercase tracking-wide">
-            Topic Title <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="e.g. Endurance Through Trials"
-            required
-            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-paradise-cream placeholder:text-white/40 focus:outline-none focus:border-paradise-gold transition-colors text-sm"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="block text-paradise-cream/60 text-xs font-semibold uppercase tracking-wide">
-            Description <span className="text-paradise-cream/30">(optional)</span>
-          </label>
-          <textarea
-            rows={3}
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Brief description of this topic…"
-            className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-paradise-cream placeholder:text-white/40 focus:outline-none focus:border-paradise-gold transition-colors text-sm resize-none"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="block text-paradise-cream/60 text-xs font-semibold uppercase tracking-wide">
-            Source URL <span className="text-paradise-cream/30">(optional — JW.org only)</span>
-          </label>
-          <div className="relative">
-            <input
-              type="url"
-              value={sourceUrl}
-              onChange={e => handleUrlChange(e.target.value)}
-              placeholder="https://www.jw.org/…"
-              className={[
-                'w-full bg-white/10 border rounded-xl px-4 py-2.5 pr-10 text-paradise-cream placeholder:text-white/40 focus:outline-none transition-colors text-sm',
-                urlError ? 'border-red-400/60 focus:border-red-400' : 'border-white/20 focus:border-paradise-gold',
-              ].join(' ')}
-            />
-            {sourceUrl && urlValid && !urlError && (
-              <Check size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-paradise-green-light" />
-            )}
+        {/* Results */}
+        {searching ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={28} className="text-paradise-gold animate-spin" />
           </div>
-          {urlError && <p className="text-red-400 text-xs px-1">{urlError}</p>}
-        </div>
-
-        {error && (
-          <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-2.5">
-            {error}
-          </p>
+        ) : results.length > 0 ? (
+          <div className="space-y-2">
+            {results.map((result, i) => (
+              <button
+                key={i}
+                onClick={() => handleAddTopic(result)}
+                disabled={savingUrl === result.url}
+                className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 hover:border-paradise-gold/30 rounded-2xl p-4 transition-colors group disabled:opacity-60"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-display text-paradise-cream text-base leading-snug">{result.title}</p>
+                      {result.source && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-paradise-cream/50 border border-white/10 shrink-0">
+                          {result.source}
+                        </span>
+                      )}
+                    </div>
+                    {result.snippet && (
+                      <p className="text-paradise-cream/50 text-xs line-clamp-2">{result.snippet}</p>
+                    )}
+                  </div>
+                  <div className="shrink-0 text-paradise-gold/40 group-hover:text-paradise-gold transition-colors text-xs font-semibold mt-0.5">
+                    {savingUrl === result.url
+                      ? <Loader2 size={14} className="animate-spin text-paradise-gold" />
+                      : '+ Add'
+                    }
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 py-8 text-paradise-cream/30">
+            <BookOpen size={28} />
+            <p className="text-sm">Search or browse a category above</p>
+          </div>
         )}
 
-        <div className="flex gap-3 pt-1">
-          <button
-            onClick={handleSave}
-            disabled={saving || !title.trim() || !urlValid}
-            className="flex-1 bg-paradise-gold text-paradise-green-deep font-semibold rounded-xl py-2.5 hover:bg-paradise-gold-light transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-          >
-            {saving ? <><Loader2 size={16} className="animate-spin" /> Saving…</> : 'Save Topic'}
-          </button>
+        {/* Footer */}
+        <div className="pt-1 border-t border-white/10">
           <button
             onClick={onClose}
-            className="flex-1 border border-paradise-cream/20 text-paradise-cream/70 rounded-xl py-2.5 hover:border-paradise-cream/40 transition-colors text-sm"
+            className="w-full border border-paradise-cream/20 text-paradise-cream/70 rounded-xl py-2.5 hover:border-paradise-cream/40 transition-colors text-sm"
           >
-            Cancel
+            Close
           </button>
         </div>
       </div>

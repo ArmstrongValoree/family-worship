@@ -42,6 +42,24 @@ export async function searchJWMaterial(
   return (data.results as SearchResult[]).filter(r => isApprovedSource(r.url))
 }
 
+export interface TopicResult {
+  title: string
+  url: string
+  snippet: string
+  source?: string
+}
+
+export async function fetchTopicsFromURL(url: string): Promise<TopicResult[]> {
+  if (!isApprovedSource(url)) {
+    throw new Error('Only JW.org sources are permitted')
+  }
+  const params = new URLSearchParams({ url })
+  const res = await fetch(`${SCRAPER_URL}/topics?${params}`)
+  if (!res.ok) throw new Error('Failed to fetch topics')
+  const data = await res.json()
+  return data.topics as TopicResult[]
+}
+
 export async function fetchArticleContent(url: string): Promise<{
   title: string
   content: string
