@@ -27,6 +27,11 @@ const FALLBACK_CATEGORIES = [
   "Jehovah's Organization",
 ]
 
+// Detects scripture reference patterns like "Eph. 6:17" or "1 Cor. 13:4"
+function isScriptureRef(text: string): boolean {
+  return /[A-Z][a-z]*\.\s*\d+:\d+/.test(text)
+}
+
 interface TopicAddModalProps {
   householdId: string
   onAdd: (topic: Omit<Topic, 'id' | 'created_at'>) => Promise<void>
@@ -54,13 +59,19 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
     return () => { mounted = false }
   }, [])
 
+  function dedupeByUrl(items: TopicResult[]): TopicResult[] {
+    return items.filter((item, index, self) =>
+      index === self.findIndex(r => r.url === item.url)
+    )
+  }
+
   async function handleSearch() {
     if (!searchQuery.trim()) return
     setSearching(true)
     setResults([])
     try {
       const items = await searchJWMaterial(searchQuery.trim(), 'all', 8)
-      setResults(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source })))
+      setResults(dedupeByUrl(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source }))))
     } catch {
       setResults([])
     } finally {
@@ -75,7 +86,7 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
     setResults([])
     try {
       const items = await searchJWMaterial(category, 'all', 8)
-      setResults(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source })))
+      setResults(dedupeByUrl(items.map(r => ({ title: r.title, url: r.url, snippet: r.snippet, source: r.source }))))
     } catch {
       setResults([])
     } finally {
@@ -84,15 +95,19 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
   }
 
   async function handleAddTopic(result: TopicResult) {
+    const isRef = isScriptureRef(result.title)
+    const titleToSave = isRef && result.snippet ? result.snippet : result.title
+    const descriptionToSave = !isRef ? (result.snippet || undefined) : undefined
+
     setSavingUrl(result.url)
     try {
       await onAdd({
         household_id: householdId,
-        title: result.title,
-        description: result.snippet || undefined,
+        title: titleToSave,
+        description: descriptionToSave,
         source_url: result.url || undefined,
       })
-      setSuccessTitle(result.title)
+      setSuccessTitle(titleToSave)
       setTimeout(() => setSuccessTitle(null), 3000)
     } finally {
       setSavingUrl(null)
@@ -173,36 +188,45 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
           </div>
         ) : results.length > 0 ? (
           <div className="space-y-2">
-            {results.map((result, i) => (
-              <button
-                key={i}
-                onClick={() => handleAddTopic(result)}
-                disabled={savingUrl === result.url}
-                className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 hover:border-paradise-gold/30 rounded-2xl p-4 transition-colors group disabled:opacity-60"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="font-display text-paradise-cream text-base leading-snug">{result.title}</p>
-                      {result.source && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-paradise-cream/50 border border-white/10 shrink-0">
-                          {result.source}
-                        </span>
+            {results.map((result, i) => {
+              const isRef = isScriptureRef(result.title)
+              const primaryTitle = isRef && result.snippet ? result.snippet : result.title
+              const secondaryText = isRef ? result.title : null
+              const descriptionText = !isRef ? result.snippet : null
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleAddTopic(result)}
+                  disabled={savingUrl === result.url}
+                  className="w-full text-left bg-white/5 hover:bg-white/10 border border-white/10 hover:border-paradise-gold/30 rounded-2xl p-4 transition-colors group disabled:opacity-60"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="font-display text-paradise-cream text-base leading-snug">{primaryTitle}</p>
+                        {result.source && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-paradise-cream/50 border border-white/10 shrink-0">
+                            {result.source}
+                          </span>
+                        )}
+                      </div>
+                      {secondaryText && (
+                        <p className="text-paradise-cream/40 text-[10px] mb-1">{secondaryText}</p>
+                      )}
+                      {descriptionText && (
+                        <p className="text-paradise-cream/50 text-xs line-clamp-2">{descriptionText}</p>
                       )}
                     </div>
-                    {result.snippet && (
-                      <p className="text-paradise-cream/50 text-xs line-clamp-2">{result.snippet}</p>
-                    )}
+                    <div className="shrink-0 text-paradise-gold/40 group-hover:text-paradise-gold transition-colors text-xs font-semibold mt-0.5">
+                      {savingUrl === result.url
+                        ? <Loader2 size={14} className="animate-spin text-paradise-gold" />
+                        : '+ Add'
+                      }
+                    </div>
                   </div>
-                  <div className="shrink-0 text-paradise-gold/40 group-hover:text-paradise-gold transition-colors text-xs font-semibold mt-0.5">
-                    {savingUrl === result.url
-                      ? <Loader2 size={14} className="animate-spin text-paradise-gold" />
-                      : '+ Add'
-                    }
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-8 text-paradise-cream/30">
