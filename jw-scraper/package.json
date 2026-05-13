@@ -11,13 +11,18 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "puppeteer": {
+    "skip_chromium_download": true
+  },
   "type": "commonjs",
   "dependencies": {
+    "@sparticuz/chromium": "^148.0.0",
     "axios": "^1.16.0",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "puppeteer-core": "^24.43.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

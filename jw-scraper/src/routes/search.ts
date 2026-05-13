@@ -28,8 +28,16 @@ router.get('/', async (req: Request, res: Response) => {
       scrapeWOL(q, parsedLimit),
     ])
 
-    const combined = [...jwResults, ...wolResults]
-    const filtered = type === 'all' ? combined : combined.filter((r) => r.type === type)
+    const seen = new Set<string>()
+    const deduped = [...jwResults, ...wolResults].filter(r => {
+      if (seen.has(r.url)) return false
+      seen.add(r.url)
+      return true
+    })
+
+    const typeOrder: Record<string, number> = { article: 0, video: 1, song: 2 }
+    const filtered = type === 'all' ? deduped : deduped.filter((r) => r.type === type)
+    filtered.sort((a, b) => (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3))
     const sliced = filtered.slice(0, parsedLimit)
 
     const response: ScraperResponse = {

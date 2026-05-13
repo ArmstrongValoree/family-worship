@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Home, Loader2 } from 'lucide-react'
 import { useAuthContext } from '../../context/AuthContext'
@@ -7,36 +7,103 @@ import { supabase } from '../../lib/supabase'
 import { ROUTES } from '../../lib/constants'
 
 export function CreateHouseholdPage() {
-  const { user, profile } = useAuthContext()
+  const { user, profile, loading } = useAuthContext()
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    console.log('[CreateHouseholdPage] mount — loading:', loading, '| user:', user?.email ?? null, '| profile:', profile)
+  }, [loading, user, profile])
+
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!profile) {
-      setError('Your profile hasn\'t loaded yet. Please refresh the page and try again.')
-      return
-    }
     if (!user) return
     setError('')
     setIsSubmitting(true)
 
     try {
-      const { data: household, error: insertError } = await supabase
-        .from('households')
-        .insert({ name: name.trim(), created_by: profile.id })
-        .select()
-        .single()
+      // If the background profile fetch timed out (e.g. Supabase project was
+      // waking up), try once more directly before giving up.
+      let activeProfile = profile
+      if (!activeProfile) {
+        console.log('[CreateHouseholdPage] profile null at submit — retrying fetch (10s timeout)')
+        activeProfile = await Promise.race([
+          Promise.resolve(
+            supabase.from('profiles').select('*').eq('user_id', user.id).single()
+          ).then(({ data, error }) => {
+            console.log('[CreateHouseholdPage] retry result:', data, '| error:', error?.code, error?.message)
+            return data ?? null
+          }).catch(() => null),
+          new Promise<null>(resolve =>
+            setTimeout(() => {
+              console.log('[CreateHouseholdPage] retry timed out after 10s')
+              resolve(null)
+            }, 10000)
+          ),
+        ])
+      }
 
-      if (insertError) throw insertError
+      if (!activeProfile) {
+        setError(
+          'Database unreachable — the profile fetch timed out. ' +
+          'Open DevTools → Network tab and look for a pending request to supabase.co ' +
+          'to diagnose the connection. Then refresh and try again.'
+        )
+        return
+      }
+
+      // Generate the UUID client-side — avoids needing to SELECT the row back
+      // immediately (the SELECT policy requires profile.household_id to be set first).
+      const householdId = crypto.randomUUID()
+
+      // created_by references profiles.id (FK constraint), not auth.users.
+      const { error: insertError } = await supabase
+        .from('households')
+        .insert({ id: householdId, name: name.trim(), created_by: activeProfile.id })
+
+      let finalHouseholdId = householdId
+
+      if (insertError) {
+        console.log('[CreateHouseholdPage] insert error — code:', insertError.code, '| message:', insertError.message)
+        // 23505 = unique_violation: household already exists from a previous attempt
+        // where the INSERT succeeded but the response was an error (e.g. SELECT blocked).
+        if (insertError.code !== '23505') throw insertError
+
+        // If the profile is already linked, just navigate.
+        if (activeProfile.household_id) {
+          console.log('[CreateHouseholdPage] profile already linked — navigating')
+          navigate(ROUTES.HOME, { replace: true })
+          return
+        }
+
+        // Fetch the existing household (requires updated SELECT policy).
+        console.log('[CreateHouseholdPage] conflict — fetching existing household')
+        const existing = await Promise.race([
+          Promise.resolve(
+            supabase.from('households').select('id').eq('created_by', activeProfile.id).single()
+          ).then(({ data, error }) => {
+            console.log('[CreateHouseholdPage] existing household:', data, '| error:', error?.code)
+            return data ?? null
+          }).catch(() => null),
+          new Promise<null>(resolve =>
+            setTimeout(() => {
+              console.log('[CreateHouseholdPage] existing household fetch timed out')
+              resolve(null)
+            }, 10000)
+          ),
+        ])
+
+        if (!existing) throw new Error('Household exists but could not be loaded. Ensure the SELECT policy allows created_by lookup, then refresh.')
+        finalHouseholdId = existing.id
+      }
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ household_id: household.id })
-        .eq('id', profile.id)
+        .update({ household_id: finalHouseholdId })
+        .eq('id', activeProfile.id)
 
       if (updateError) throw updateError
 

@@ -8,6 +8,12 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+// Matches patterns like "Eph. 6:17", "1 Cor. 13:4-7", "John 3:16"
+function extractScriptureRef(text: string): string | undefined {
+  const match = text.match(/\b(?:\d\s)?[A-Z][a-z]+\.?\s+\d+:\d+(?:[–\-]\d+)?/)
+  return match ? match[0].trim() : undefined
+}
+
 export async function scrapeWOL(query: string, limit: number): Promise<SearchResult[]> {
   try {
     const encoded = encodeURIComponent(query)
@@ -36,16 +42,18 @@ export async function scrapeWOL(query: string, limit: number): Promise<SearchRes
       if (!href) return
       if (href.startsWith('/')) href = `https://wol.jw.org${href}`
 
-      const snippet =
-        $el.find('p, .snippet, [class*="snippet"], [class*="excerpt"]').first().text().trim() ||
-        $el.text().replace(title, '').trim().slice(0, 200)
+      const snippetEl = $el.find('p, .snippet, [class*="snippet"], [class*="excerpt"]').first()
+      const snippet = snippetEl.text().trim() || $el.text().replace(title, '').trim().slice(0, 200)
 
-      const publication =
-        $el.find('.pub, [class*="publication"], [class*="pub-"]').first().text().trim() ||
-        undefined
+      const rawPub = $el.find('.pub, .pubName, [class*="publication"], [class*="pub-"]').first().text().trim()
+      // Take only the first line, trim to 60 chars to avoid index-style "... (See also X)" noise
+      const publication = rawPub ? rawPub.split('\n')[0].trim().slice(0, 60) || undefined : undefined
 
       const date =
         $el.find('.date, [class*="date"], time').first().text().trim() || undefined
+
+      // Check title and snippet for scripture references
+      const scriptureRef = extractScriptureRef(title) || extractScriptureRef(snippet)
 
       results.push({
         title,
@@ -55,6 +63,7 @@ export async function scrapeWOL(query: string, limit: number): Promise<SearchRes
         source: 'wol.jw.org',
         publication: publication || undefined,
         date: date || undefined,
+        category: scriptureRef ? `Scripture: ${scriptureRef}` : (publication || undefined),
       })
     })
 

@@ -26,6 +26,7 @@ export interface SearchResult {
   thumbnail?: string
   publication?: string
   date?: string
+  category?: string
 }
 
 export interface SearchQuery {

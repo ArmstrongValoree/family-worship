@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import searchRouter from './routes/search'
+import topicsRouter from './routes/topics'
 
 dotenv.config()
 
@@ -20,6 +21,7 @@ app.get('/health', (_req, res) => {
 })
 
 app.use('/search', searchRouter)
+app.use('/topics', topicsRouter)
 
 app.listen(PORT, () => {
   console.log(`JW Scraper running on port ${PORT}`)
