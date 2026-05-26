@@ -1,6 +1,12 @@
-import { CalendarDays, BookOpen, MessageSquare } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { CalendarDays, BookOpen, MessageSquare, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
+import { FeedbackModal } from '../components/feedback/FeedbackModal'
+import { StarRating } from '../components/feedback/StarRating'
+import { useAuthContext } from '../context/AuthContext'
+import { useEvents } from '../hooks/useEvents'
+import { useFeedback } from '../hooks/useFeedback'
 import { ROUTES } from '../lib/constants'
 
 const quickActions = [
@@ -31,6 +37,23 @@ const quickActions = [
 ]
 
 export function DashboardPage() {
+  const { profile } = useAuthContext()
+  const { events } = useEvents(profile?.household_id)
+  const [dismissed, setDismissed] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+
+  const mostRecentPast = useMemo(
+    () =>
+      events
+        .filter(e => new Date(e.scheduled_at) < new Date())
+        .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())[0] ??
+      null,
+    [events]
+  )
+
+  const { hasSubmitted } = useFeedback(mostRecentPast?.id)
+  const showPrompt = mostRecentPast && !hasSubmitted && !dismissed
+
   return (
     <AppShell>
       <div className="min-h-[calc(100dvh-136px)] flex flex-col items-center justify-center px-4 py-8">
@@ -69,11 +92,54 @@ export function DashboardPage() {
             </div>
           </div>
 
+          {/* Feedback prompt — only when past event has no feedback yet */}
+          {showPrompt && (
+            <div
+              className="rounded-2xl p-5 border space-y-3"
+              style={{
+                background: 'rgba(212,160,23,0.08)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderColor: 'rgba(212,160,23,0.22)',
+              }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-paradise-cream/60 text-xs uppercase tracking-wide font-semibold mb-0.5">
+                    How was it?
+                  </p>
+                  <p className="text-paradise-cream font-semibold text-sm">
+                    {mostRecentPast.title || 'Family Worship Evening'}
+                  </p>
+                  <p className="text-paradise-cream/40 text-xs">
+                    {new Date(mostRecentPast.scheduled_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDismissed(true)}
+                  className="p-1.5 rounded-lg text-paradise-cream/30 hover:text-paradise-cream/60 hover:bg-white/10 transition-colors shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div>
+                <p className="text-paradise-cream/60 text-xs mb-2">
+                  Tap a star to rate your last Family Worship evening
+                </p>
+                <StarRating
+                  rating={0}
+                  onChange={() => setShowFeedbackModal(true)}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Quick action cards */}
           <div>
-            <p
-              className="text-paradise-cream/50 text-xs font-semibold uppercase tracking-widest mb-3 px-1"
-            >
+            <p className="text-paradise-cream/50 text-xs font-semibold uppercase tracking-widest mb-3 px-1">
               Quick Access
             </p>
             <div className="grid grid-cols-3 gap-3">
@@ -93,9 +159,7 @@ export function DashboardPage() {
                     <div className="p-2 rounded-xl bg-white/10">
                       <Icon size={20} className={iconColor} />
                     </div>
-                    <span
-                      className="text-paradise-cream text-xs font-semibold leading-tight"
-                    >
+                    <span className="text-paradise-cream text-xs font-semibold leading-tight">
                       {label}
                     </span>
                     <span className="text-paradise-cream/40 text-[10px] leading-tight">
@@ -134,6 +198,13 @@ export function DashboardPage() {
 
         </div>
       </div>
+
+      {showFeedbackModal && mostRecentPast && (
+        <FeedbackModal
+          event={mostRecentPast}
+          onClose={() => setShowFeedbackModal(false)}
+        />
+      )}
     </AppShell>
   )
 }

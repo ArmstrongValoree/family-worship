@@ -5,6 +5,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import { useStudyMaterial } from '../../hooks/useStudyMaterial'
 import { AssignedMaterialList } from '../study/AssignedMaterialList'
 import { MaterialAssignModal } from '../study/MaterialAssignModal'
+import { FeedbackModal } from '../feedback/FeedbackModal'
 import type { EventWithMaterials } from '../../hooks/useEvents'
 import type { MemberInstruction } from '../../types'
 
@@ -27,9 +28,11 @@ function formatDateTime(isoString: string) {
 export function EventDetailModal({ event, onClose, onEdit, onRequestDateChange }: EventDetailModalProps) {
   const { profile } = useAuthContext()
   const isHH = profile?.role === 'head_of_household'
+  const isPast = new Date(event.scheduled_at) < new Date()
   const { dayOfWeek, date, time } = formatDateTime(event.scheduled_at)
   const [instruction, setInstruction] = useState<MemberInstruction | null>(null)
   const [showMaterialModal, setShowMaterialModal] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const { materials, removeMaterial } = useStudyMaterial(event.id)
 
   useEffect(() => {
@@ -106,7 +109,14 @@ export function EventDetailModal({ event, onClose, onEdit, onRequestDateChange }
           )}
 
           <div className="flex gap-3 mt-2">
-            {isHH ? (
+            {isPast ? (
+              <button
+                onClick={() => setShowFeedbackModal(true)}
+                className="flex-1 bg-paradise-gold text-paradise-green-deep font-semibold rounded-xl py-2.5 hover:bg-paradise-gold-light transition-colors text-sm"
+              >
+                {isHH ? 'View Feedback' : 'Give Feedback'}
+              </button>
+            ) : isHH ? (
               <button
                 onClick={onEdit}
                 className="flex-1 bg-paradise-gold text-paradise-green-deep font-semibold rounded-xl py-2.5 hover:bg-paradise-gold-light transition-colors text-sm"
@@ -127,6 +137,10 @@ export function EventDetailModal({ event, onClose, onEdit, onRequestDateChange }
 
       {showMaterialModal && (
         <MaterialAssignModal event={event} onClose={() => setShowMaterialModal(false)} />
+      )}
+
+      {showFeedbackModal && (
+        <FeedbackModal event={event} onClose={() => setShowFeedbackModal(false)} />
       )}
     </>
   )

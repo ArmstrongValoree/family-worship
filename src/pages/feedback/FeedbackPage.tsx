@@ -1,80 +1,172 @@
-import { Star, MessageSquare } from 'lucide-react'
-import { useState } from 'react'
-import { Card } from '../../components/ui/Card'
-import { Button } from '../../components/ui/Button'
+import { useState, useEffect, useMemo } from 'react'
+import { Loader2, MessageSquare } from 'lucide-react'
 import { AppShell } from '../../components/layout/AppShell'
+import { FeedbackModal } from '../../components/feedback/FeedbackModal'
+import { StarRating } from '../../components/feedback/StarRating'
+import { useAuthContext } from '../../context/AuthContext'
+import { useEvents } from '../../hooks/useEvents'
+import { supabase } from '../../lib/supabase'
+import type { FamilyWorshipEvent, FeedbackEntry } from '../../types'
+
+interface EventSummary {
+  count: number
+  avgRating: number
+  userSubmitted: boolean
+}
+
+function formatDate(isoString: string): string {
+  return new Date(isoString).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 export function FeedbackPage() {
-  const [rating, setRating] = useState(0)
-  const [hovered, setHovered] = useState(0)
+  const { profile } = useAuthContext()
+  const isHH = profile?.role === 'head_of_household'
+  const { events, loading: eventsLoading } = useEvents(profile?.household_id)
+
+  const pastEvents = useMemo(
+    () =>
+      events
+        .filter(e => new Date(e.scheduled_at) < new Date())
+        .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime()),
+    [events]
+  )
+
+  const [summaries, setSummaries] = useState<Map<string, EventSummary>>(new Map())
+  const [selectedEvent, setSelectedEvent] = useState<FamilyWorshipEvent | null>(null)
+
+  useEffect(() => {
+    if (!profile || pastEvents.length === 0) return
+    const ids = pastEvents.map(e => e.id)
+
+    supabase
+      .from('feedback_entries')
+      .select('*')
+      .in('event_id', ids)
+      .then(({ data }) => {
+        const entries = (data ?? []) as FeedbackEntry[]
+        const map = new Map<string, EventSummary>()
+        for (const event of pastEvents) {
+          const ev = entries.filter(f => f.event_id === event.id)
+          map.set(event.id, {
+            count: ev.length,
+            avgRating:
+              ev.length === 0
+                ? 0
+                : Math.round((ev.reduce((s, f) => s + f.rating, 0) / ev.length) * 10) / 10,
+            userSubmitted: ev.some(f => f.profile_id === profile.id),
+          })
+        }
+        setSummaries(map)
+      })
+  }, [pastEvents, profile])
+
+  function handleModalClose() {
+    setSelectedEvent(null)
+    // Re-fetch summaries to reflect any newly submitted feedback
+    if (!profile || pastEvents.length === 0) return
+    const ids = pastEvents.map(e => e.id)
+    supabase
+      .from('feedback_entries')
+      .select('*')
+      .in('event_id', ids)
+      .then(({ data }) => {
+        const entries = (data ?? []) as FeedbackEntry[]
+        const map = new Map<string, EventSummary>()
+        for (const event of pastEvents) {
+          const ev = entries.filter(f => f.event_id === event.id)
+          map.set(event.id, {
+            count: ev.length,
+            avgRating:
+              ev.length === 0
+                ? 0
+                : Math.round((ev.reduce((s, f) => s + f.rating, 0) / ev.length) * 10) / 10,
+            userSubmitted: ev.some(f => f.profile_id === profile.id),
+          })
+        }
+        setSummaries(map)
+      })
+  }
 
   return (
     <AppShell>
-      <div className="px-4 py-6 max-w-lg mx-auto space-y-5">
+      <div className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         <div>
-          <h1 className="font-display text-3xl text-paradise-cream">Session Feedback</h1>
-          <p className="text-paradise-cream/60 text-sm mt-1">How did your last Family Worship evening go?</p>
+          <h1 className="font-display text-3xl text-paradise-cream">Feedback</h1>
+          <p className="text-paradise-cream/60 text-sm mt-1">
+            Rate your Family Worship evenings
+          </p>
         </div>
 
-        {/* Session reference */}
-        <Card variant="glass">
-          <p className="text-paradise-cream/50 text-xs uppercase tracking-wide mb-1">Last Session</p>
-          <p className="text-paradise-cream font-semibold">Bible Study — Romans 12</p>
-          <p className="text-paradise-cream/50 text-xs mt-0.5">April 28, 2026 · 45 minutes</p>
-        </Card>
-
-        {/* Rating */}
-        <Card variant="glass" className="space-y-4">
-          <div>
-            <p className="text-paradise-cream font-medium mb-3">How would you rate this session?</p>
-            <div className="flex gap-2 justify-center">
-              {[1, 2, 3, 4, 5].map((star) => (
+        {eventsLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 size={28} className="text-paradise-gold animate-spin" />
+          </div>
+        ) : pastEvents.length === 0 ? (
+          <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-8 text-center space-y-2">
+            <MessageSquare size={32} className="text-paradise-gold/50 mx-auto" />
+            <p className="text-paradise-cream/60 text-sm leading-relaxed">
+              No past Family Worship evenings yet.
+              <br />
+              Check back after your first evening together! 🌿
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {isHH && (
+              <p className="text-paradise-cream/40 text-xs uppercase tracking-widest font-semibold px-1">
+                Feedback Overview
+              </p>
+            )}
+            {pastEvents.map(event => {
+              const summary = summaries.get(event.id)
+              return (
                 <button
-                  key={star}
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHovered(star)}
-                  onMouseLeave={() => setHovered(0)}
-                  className="transition-transform hover:scale-110 active:scale-95"
+                  key={event.id}
+                  onClick={() => setSelectedEvent(event)}
+                  className="w-full text-left backdrop-blur-md bg-white/5 hover:bg-white/10 border border-white/10 hover:border-paradise-gold/30 rounded-2xl p-4 transition-colors group"
                 >
-                  <Star
-                    size={36}
-                    className={
-                      star <= (hovered || rating)
-                        ? 'text-paradise-gold fill-paradise-gold'
-                        : 'text-paradise-cream/20'
-                    }
-                  />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <p className="font-display text-paradise-cream text-lg leading-snug">
+                        {event.title || 'Family Worship Evening'}
+                      </p>
+                      <p className="text-paradise-cream/50 text-xs">{formatDate(event.scheduled_at)}</p>
+                      {summary && summary.avgRating > 0 && (
+                        <StarRating rating={summary.avgRating} readonly />
+                      )}
+                      {isHH && summary && (
+                        <p className="text-paradise-cream/40 text-xs">
+                          {summary.count} member{summary.count !== 1 ? 's' : ''} responded
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 mt-0.5">
+                      {summary?.userSubmitted ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-paradise-green-light/15 text-paradise-green-light border border-paradise-green-light/20">
+                          Feedback Given ✓
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-paradise-gold/15 text-paradise-gold border border-paradise-gold/20">
+                          Give Feedback
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </button>
-              ))}
-            </div>
+              )
+            })}
           </div>
-
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-paradise-cream/80 text-sm font-medium">
-              <MessageSquare size={14} />
-              Notes (optional)
-            </label>
-            <textarea
-              rows={3}
-              placeholder="What went well? What could be better?"
-              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-paradise-cream placeholder-paradise-cream/30 focus:outline-none focus:border-paradise-gold/60 text-sm resize-none"
-            />
-          </div>
-
-          <Button variant="primary" size="md" fullWidth disabled={rating === 0}>
-            Submit Feedback
-          </Button>
-        </Card>
-
-        {/* Past feedback */}
-        <div>
-          <h2 className="font-display text-xl text-paradise-cream mb-3">Past Feedback</h2>
-          <Card variant="glass" className="text-paradise-cream/50 text-sm flex items-center gap-2">
-            <Star size={16} className="text-paradise-gold/40" />
-            Your past session ratings will appear here.
-          </Card>
-        </div>
+        )}
       </div>
+
+      {selectedEvent && (
+        <FeedbackModal event={selectedEvent} onClose={handleModalClose} />
+      )}
     </AppShell>
   )
 }

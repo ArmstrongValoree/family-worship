@@ -106,12 +106,12 @@ content sources are permitted under any circumstances.
 - [x] Phase 3 — Profiles (HH + family member roles)
 - [x] Phase 4 — Shared calendar + FW events + date change requests
 - [x] Phase 5 — Topic selection (dropdown + swipe voting)
-- [ ] Phase 6 — Post-FW rating + private feedback
+- [x] Phase 6 — Post-FW rating + private feedback
 - [x] Phase 7 — JW.org scraper microservice (Railway)
 - [x] Phase 8 — Study material assignment
 - [ ] Phase 9 — Private per-member instructions
 - [x] Phase 10 — Topic selection (dropdown + swipe voting)
 - [x] Phase 11 — HH override + alert notifications
-- [ ] Phase 12 — Post-FW rating + private feedback
+- [x] Phase 12 — Post-FW rating + private feedback
 - [ ] Phase 13 — PWA push notifications
 - [ ] Phase 14 — Cloudflare Pages deployment
