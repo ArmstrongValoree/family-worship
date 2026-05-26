@@ -242,10 +242,10 @@ export function TopicSelectionPage() {
         </section>
       </div>
 
-      {showAddModal && (
+      {showAddModal && profile?.id && (
         <TopicAddModal
           householdId={stableHouseholdId}
-          profileId={profile?.id ?? ''}
+          profileId={profile.id}
           onAdd={async (topic) => {
             await addTopic(topic)
             refetchTopics()

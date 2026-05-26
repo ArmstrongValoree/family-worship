@@ -100,9 +100,20 @@ export function TopicAddModal({ householdId, profileId, onAdd, onClose }: TopicA
   }
 
   async function handleAddTopic(result: TopicResult) {
+    if (!profileId) {
+      setSaveError('Your profile is not loaded yet. Please try again.')
+      return
+    }
+    if (!householdId) {
+      setSaveError('No household found. Please refresh and try again.')
+      return
+    }
+
     const isRef = isScriptureRef(result.title)
     const titleToSave = isRef && result.snippet ? result.snippet : result.title
     const descriptionToSave = !isRef ? (result.snippet || undefined) : undefined
+
+    console.log('Inserting topic:', { title: titleToSave, household_id: householdId, created_by: profileId })
 
     setSavingUrl(result.url)
     setSaveError(null)
