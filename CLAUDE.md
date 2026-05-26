@@ -113,5 +113,10 @@ content sources are permitted under any circumstances.
 - [x] Phase 10 — Topic selection (dropdown + swipe voting)
 - [x] Phase 11 — HH override + alert notifications
 - [x] Phase 12 — Post-FW rating + private feedback
-- [ ] Phase 13 — PWA push notifications
-- [ ] Phase 14 — Cloudflare Pages deployment
+- [x] Phase 13 — PWA push notifications
+- [x] Phase 14 — Cloudflare Pages deployment
+
+## Production URLs
+- Frontend: https://family-worship.pages.dev (Cloudflare Pages)
+- Scraper: https://jw-scraper.onrender.com (Render)
+- Database: Supabase (see .env for URL)

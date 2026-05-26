@@ -73,6 +73,11 @@ export function useEventForm(initial?: Partial<EventFormFields>): UseEventFormRe
     try {
       let event: FamilyWorshipEvent
 
+      const formattedDate = new Date(`${fields.date}T${fields.time}`).toLocaleDateString(
+        'en-US',
+        { weekday: 'long', month: 'long', day: 'numeric' }
+      )
+
       if (eventId) {
         const { data, error: updateError } = await supabase
           .from('family_worship_events')
@@ -102,6 +107,16 @@ export function useEventForm(initial?: Partial<EventFormFields>): UseEventFormRe
           .single()
         if (insertError) throw insertError
         event = data as FamilyWorshipEvent
+
+        // Fire-and-forget push notification to household members
+        supabase.functions.invoke('send-push-notification', {
+          body: {
+            household_id: householdId,
+            title: 'Family Worship Scheduled 🌿',
+            body: `A Family Worship evening has been scheduled for ${formattedDate}`,
+            url: '/calendar',
+          },
+        }).catch(() => null)
       }
 
       if (materials.length > 0) {

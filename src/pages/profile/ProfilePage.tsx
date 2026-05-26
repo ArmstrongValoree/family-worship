@@ -2,6 +2,7 @@ import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AppShell } from '../../components/layout/AppShell'
 import { Badge } from '../../components/ui/Badge'
+import { NotificationSettings } from '../../components/notifications/NotificationSettings'
 import { useAuthContext } from '../../context/AuthContext'
 import { useHousehold } from '../../hooks/useHousehold'
 import { ROUTES } from '../../lib/constants'
@@ -50,6 +51,14 @@ export function ProfilePage() {
               <p className="text-paradise-cream/50 text-sm">{household.name}</p>
             )}
           </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-4">
+          <p className="text-paradise-cream/50 text-xs uppercase tracking-wide font-semibold mb-3">
+            Notifications
+          </p>
+          <NotificationSettings />
         </div>
 
         {/* Sign out */}

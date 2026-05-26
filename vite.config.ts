@@ -7,11 +7,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'Family Worship',
         short_name: 'FamilyWorship',
-        description: 'Plan and enjoy your family worship nights together',
+        description: 'Plan and enjoy your family worship evenings together',
         theme_color: '#1a3d2b',
         background_color: '#fdf8f0',
         display: 'standalone',
@@ -29,9 +32,6 @@ export default defineConfig({
             type: 'image/png',
           },
         ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
     }),
   ],
