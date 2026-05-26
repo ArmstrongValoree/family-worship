@@ -34,17 +34,19 @@ function isScriptureRef(text: string): boolean {
 
 interface TopicAddModalProps {
   householdId: string
+  profileId: string
   onAdd: (topic: Omit<Topic, 'id' | 'created_at'>) => Promise<void>
   onClose: () => void
 }
 
-export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProps) {
+export function TopicAddModal({ householdId, profileId, onAdd, onClose }: TopicAddModalProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [results, setResults] = useState<TopicResult[]>([])
   const [searching, setSearching] = useState(false)
   const [savingUrl, setSavingUrl] = useState<string | null>(null)
   const [successTitle, setSuccessTitle] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES)
 
   useEffect(() => {
@@ -60,9 +62,12 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
   }, [])
 
   function dedupeByUrl(items: TopicResult[]): TopicResult[] {
-    return items.filter((item, index, self) =>
-      index === self.findIndex(r => r.url === item.url)
-    )
+    const seen = new Set<string>()
+    return items.filter(item => {
+      if (seen.has(item.url)) return false
+      seen.add(item.url)
+      return true
+    })
   }
 
   async function handleSearch() {
@@ -100,15 +105,19 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
     const descriptionToSave = !isRef ? (result.snippet || undefined) : undefined
 
     setSavingUrl(result.url)
+    setSaveError(null)
     try {
       await onAdd({
         household_id: householdId,
         title: titleToSave,
         description: descriptionToSave,
         source_url: result.url || undefined,
+        created_by: profileId,
       })
       setSuccessTitle(titleToSave)
       setTimeout(() => setSuccessTitle(null), 3000)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save topic')
     } finally {
       setSavingUrl(null)
     }
@@ -137,6 +146,13 @@ export function TopicAddModal({ householdId, onAdd, onClose }: TopicAddModalProp
             <p className="text-paradise-green-light text-sm truncate">
               "{successTitle}" added to your library ✓
             </p>
+          </div>
+        )}
+
+        {/* Error toast */}
+        {saveError && (
+          <div className="px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30">
+            <p className="text-red-400 text-sm">{saveError}</p>
           </div>
         )}
 

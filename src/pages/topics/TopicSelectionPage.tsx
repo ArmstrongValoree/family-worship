@@ -197,13 +197,15 @@ export function TopicSelectionPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-xl text-paradise-cream">Your Topic Library</h2>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 bg-paradise-gold text-paradise-green-deep text-sm font-semibold px-3 py-2 rounded-xl hover:bg-paradise-gold-light transition-colors"
-            >
-              <Plus size={15} />
-              Add Topic
-            </button>
+            {isHH && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-1.5 bg-paradise-gold text-paradise-green-deep text-sm font-semibold px-3 py-2 rounded-xl hover:bg-paradise-gold-light transition-colors"
+              >
+                <Plus size={15} />
+                Add Topic
+              </button>
+            )}
           </div>
 
           {topicsLoading ? (
@@ -214,12 +216,14 @@ export function TopicSelectionPage() {
               <p className="text-paradise-cream/60 text-sm">
                 No topics added yet — add your first topic from JW.org
               </p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="mt-2 text-paradise-gold text-sm hover:underline"
-              >
-                Add a topic
-              </button>
+              {isHH && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="mt-2 text-paradise-gold text-sm hover:underline"
+                >
+                  Add a topic
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -241,6 +245,7 @@ export function TopicSelectionPage() {
       {showAddModal && (
         <TopicAddModal
           householdId={stableHouseholdId}
+          profileId={profile?.id ?? ''}
           onAdd={async (topic) => {
             await addTopic(topic)
             refetchTopics()

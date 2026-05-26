@@ -53,6 +53,7 @@ export interface Topic {
   title: string
   description?: string
   source_url?: string
+  created_by: string
   created_at: string
 }
 

@@ -38,8 +38,12 @@ export function useTopics(household_id: string | undefined): UseTopicsReturn {
 
   const addTopic = useCallback(
     async (topic: Omit<Topic, 'id' | 'created_at'>) => {
+      console.log('[addTopic] inserting:', topic)
       const { error: err } = await supabase.from('topics').insert(topic)
-      if (err) throw new Error(err.message)
+      if (err) {
+        console.error('[addTopic] error:', err)
+        throw new Error(err.message)
+      }
       refetch()
     },
     [refetch]
