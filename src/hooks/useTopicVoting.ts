@@ -14,7 +14,7 @@ interface UseTopicVotingReturn {
 }
 
 export function useTopicVoting(
-  event_id: string | undefined,
+  _event_id: string | undefined,
   household_id: string | undefined
 ): UseTopicVotingReturn {
   const [votes, setVotes] = useState<TopicVote[]>([])
