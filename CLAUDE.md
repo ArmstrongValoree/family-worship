@@ -1,9 +1,8 @@
 # Family Worship App — Claude Code Context
 
 ## Project Overview
-A Progressive Web App (PWA) for couples and families to plan, schedule, and engage 
-with their family worship nights. Built with React 18 + TypeScript + Vite + Supabase, 
-deployed to Cloudflare Pages.
+A PWA for Jehovah's Witnesses families to plan, schedule, and 
+engage with their Family Worship evenings.
 
 ## Tech Stack
 - Frontend: React 18 + TypeScript + Vite
@@ -12,111 +11,77 @@ deployed to Cloudflare Pages.
 - Routing: React Router v6
 - Auth/DB/Realtime: Supabase
 - Icons: Lucide React
-- Fonts: Cormorant Garamond (display) + Nunito (body) via Google Fonts
-- JW.org Content: Separate Node.js microservice (Railway) using Cheerio + Axios
-- Hosting: Cloudflare Pages (frontend) + Railway (scraper microservice)
+- Fonts: Cormorant Garamond (display) + Nunito (body)
+- JW.org Content: Node.js microservice on Render (Cheerio + Puppeteer)
+- Hosting: Cloudflare Pages (frontend) + Render (scraper)
 
-## Folder Structure
-- src/pages/ — one file per route/page
-- src/components/ui/ — reusable base UI components (Button, Card, Modal, etc.)
+## Directory Structure
+- src/pages/          — one file per route
+- src/components/ui/  — reusable base components
 - src/components/layout/ — AppShell, TopBar, BottomNav
-- src/components/paradise/ — paradise background and visual components
-- src/hooks/ — custom React hooks (useAuth, useHousehold, etc.)
-- src/lib/ — supabase client, constants, utilities
-- src/types/ — all TypeScript interfaces and types (index.ts)
-- src/styles/ — globals.css with Tailwind directives and CSS variables
-
-## Design System
-All colors use CSS variables defined in src/styles/globals.css.
-Core palette:
-  --paradise-green-deep: #1a3d2b  (primary dark)
-  --paradise-green-mid: #2d6a4f   (primary mid)
-  --paradise-green-light: #52b788 (accent)
-  --paradise-gold: #d4a017        (highlight)
-  --paradise-cream: #fdf8f0       (background)
-  --paradise-ocean: #0077b6       (link/action)
-Always use Tailwind paradise-* color classes, never hardcode hex values in components.
-Display font (headings): font-display (Cormorant Garamond)
-Body font: font-body (Nunito)
+- src/components/paradise/ — paradise background components
+- src/components/calendar/ — calendar and event components
+- src/components/study/    — study material components
+- src/components/topics/   — topic selection and voting
+- src/components/feedback/ — rating and feedback components
+- src/components/notifications/ — push notification components
+- src/hooks/          — custom React hooks
+- src/lib/            — supabase client, scraperApi, constants
+- src/types/          — all TypeScript interfaces (index.ts)
+- src/styles/         — globals.css with Tailwind + CSS variables
+- jw-scraper/         — standalone Node.js scraper microservice
+- supabase/           — SQL migrations and edge functions
 
 ## User Roles
-- head_of_household (HH): full control — creates household, schedules events, 
-  assigns material, sets instructions, overrides topic votes
-- family_member: can view events, vote on topics, submit feedback, 
-  request date changes
+- head_of_household: full control — schedules events, assigns 
+  material, manages topics, overrides votes, views all feedback
+- family_member: views events, votes on topics, submits feedback,
+  requests date changes
 
-## Database
-All Supabase tables use Row Level Security (RLS). Every table has:
-  - id (uuid, primary key, default gen_random_uuid())
-  - created_at (timestamptz, default now())
-Profiles are linked to auth.users via user_id foreign key.
-
-## Key Rules — Always Follow
-1. Never assume instructions — ask before proceeding if anything is unclear
-2. Never assume existing code — read the file before editing it
-3. Provide all instructions in chronological order
-4. Go through requirements one at a time
-5. Do not proceed to the next task without confirmation
-6. Always use TypeScript — no plain .js files in src/
-7. Always use Tailwind classes — no inline styles except CSS variables
-8. All new Supabase tables must include RLS policies
-9. All git commits must follow Conventional Commits format:
-   feat: / fix: / chore: / docs: / refactor: / style:
-10. Never hardcode secrets — always use import.meta.env.VITE_* variables
-
-## Git Conventions
-Format: type(scope): description
-Examples:
-  feat(auth): add login page with supabase auth
-  feat(calendar): create family worship event component
-  fix(pwa): correct service worker registration
-  chore(deps): update supabase client to latest
-
-## Environment Variables
-All secrets live in .env (gitignored). 
-Reference .env.example for required keys.
-Never commit .env to git.
+## Key Conventions
+- TypeScript only — no .js files in src/
+- Tailwind paradise-* classes only — no hardcoded hex values
+- All new Supabase tables must have RLS policies
+- Commits follow Conventional Commits: feat/fix/chore/docs/refactor
+- Secrets in .env only — never committed to git
+- Read every file before editing it
 
 ## JW Terminology Standards
-Use accurate Jehovah's Witness language throughout the UI. Never use generic substitutes.
-
-| Use this | Not this |
+| Use | Never use |
 |---|---|
-| Family Worship evening | Family worship night / session / worship night |
-| Family Worship Evening (title case in headings) | Family worship night |
-| Head of Household | admin / leader / organizer |
-| Family member | participant / user |
-| JW.org | the website / jw library |
+| Family Worship evening | session / worship night |
+| Head of Household | admin / leader |
+| Jehovah | God (in UI text) |
+| Kingdom Hall | church |
+| Elder | pastor / priest |
+| Congregation | parish / community |
 
-All event title fallbacks must use "Family Worship Evening".
-Study material descriptions should reference JW.org specifically.
+Event title fallback: "Family Worship Evening"
+Tone: warm, encouraging, family-centered
 
 ## Approved Content Sources
-Only the following sources are permitted in the app:
-- https://www.jw.org
-- https://wol.jw.org
-- https://tv.jw.org
-- https://download.jw.org
-No other religious websites, Bible translations, or third party
-content sources are permitted under any circumstances.
+Only these domains are permitted — no exceptions:
+- www.jw.org
+- wol.jw.org
+- tv.jw.org
+- download.jw.org
 
-## Phase Tracker
-- [x] Phase 1 — Project scaffold, design system, PWA config
-- [x] Phase 2 — Supabase setup (auth, tables, RLS)
-- [x] Phase 3 — Profiles (HH + family member roles)
-- [x] Phase 4 — Shared calendar + FW events + date change requests
-- [x] Phase 5 — Topic selection (dropdown + swipe voting)
-- [x] Phase 6 — Post-FW rating + private feedback
-- [x] Phase 7 — JW.org scraper microservice (Railway)
-- [x] Phase 8 — Study material assignment
-- [ ] Phase 9 — Private per-member instructions
-- [x] Phase 10 — Topic selection (dropdown + swipe voting)
-- [x] Phase 11 — HH override + alert notifications
-- [x] Phase 12 — Post-FW rating + private feedback
-- [x] Phase 13 — PWA push notifications
-- [x] Phase 14 — Cloudflare Pages deployment
+## Database Tables
+profiles, households, family_worship_events, study_materials,
+member_instructions, topics, topic_votes, date_change_requests,
+feedback_entries, notifications, push_subscriptions
 
 ## Production URLs
-- Frontend: https://family-worship.pages.dev (Cloudflare Pages)
-- Scraper: https://jw-scraper.onrender.com (Render)
-- Database: Supabase (see .env for URL)
+- App: https://family-worship.pages.dev
+- Scraper: https://jw-scraper.onrender.com
+
+## Phase Tracker
+- [x] Phase 1 — Scaffold, design system, PWA config
+- [x] Phase 2 — Supabase tables and RLS policies
+- [x] Phase 3 — Auth, profiles, household invite system
+- [x] Phase 4 — Shared calendar and FW events
+- [x] Phase 5 — JW.org scraper microservice
+- [x] Phase 6 — Study material UI and assignment
+- [x] Phase 7 — Topic selection, swipe voting, HH override
+- [x] Phase 8 — Feedback and rating system
+- [x] Phase 9 — PWA push notifications + Cloudflare deployment
