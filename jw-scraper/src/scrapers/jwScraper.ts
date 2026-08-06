@@ -35,18 +35,14 @@ export async function scrapeJW(query: string, limit: number): Promise<SearchResu
       timeout: TIMEOUT_MS,
     })
 
-    // Wait for search input to be ready, then type query
     await page.waitForSelector('input.cc-input, input[type="text"]', { timeout: 20000 })
     await page.click('input.cc-input, input[type="text"]')
-    await page.keyboard.type(query, { delay: 40 })
+    await page.keyboard.type(query)
     await page.keyboard.press('Enter')
 
-    // Wait for results to render
     await page
       .waitForSelector('.cc-mediaObject', { timeout: 20000 })
       .catch(() => null)
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 1500))
 
     const raw: RawResult[] = await page.evaluate((lim: number): RawResult[] => {
       const items: RawResult[] = []
@@ -61,35 +57,30 @@ export async function scrapeJW(query: string, limit: number): Promise<SearchResu
       for (const card of cards) {
         if (items.length >= lim) break
 
-        // Must have a body with category + title structure
         const bodyEl = card.querySelector('.cc-mediaObject-body') as HTMLElement | null
         if (!bodyEl) continue
 
-        // Category label — e.g. "FAITH IN GOD", "BIBLE QUESTIONS ANSWERED"
         const catEl = bodyEl.querySelector('p.cc-deemphasizedText') as HTMLElement | null
         const category = catEl?.textContent?.trim() ?? ''
 
-        // Title: specifically from h4 > a > span (not duration text)
         const h4 = bodyEl.querySelector('h4') as HTMLElement | null
         if (!h4) continue
         const linkEl = h4.querySelector('a') as HTMLAnchorElement | null
         if (!linkEl) continue
         const title = (h4.querySelector('span')?.textContent || linkEl.textContent || '').trim()
-        // Skip duration-like titles (e.g. "4:43", "12:40")
+        // Video cards show duration (e.g. "4:43") in h4 — skip those
         if (!title || title.length < 4 || /^\d+:\d+$/.test(title)) continue
 
         let href = linkEl.getAttribute('href') || linkEl.href || ''
         if (!href) continue
         if (href.startsWith('/')) href = 'https://www.jw.org' + href
 
-        // Snippet — non-category, non-empty <p> after the h4
         const paras = Array.from(bodyEl.querySelectorAll('p')) as HTMLElement[]
         const snippetEl = paras.find(
           (p) => p !== catEl && (p.textContent || '').trim().length > 10
         ) || null
         const snippet = snippetEl?.textContent?.trim() ?? ''
 
-        // Thumbnail
         const imgEl = card.querySelector('img.cc-mediaObjectImage') as HTMLImageElement | null
         let thumbnail = imgEl?.getAttribute('src') || imgEl?.src || ''
         if (thumbnail.startsWith('/')) thumbnail = 'https://www.jw.org' + thumbnail

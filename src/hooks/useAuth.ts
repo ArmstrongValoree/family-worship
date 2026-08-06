@@ -12,38 +12,27 @@ interface AuthHook {
   signOut: () => Promise<void>
 }
 
+// Race the DB query against an 8-second timeout so a paused Supabase project
+// never hangs the app indefinitely.
 async function fetchProfile(userId: string): Promise<Profile | null> {
-  // Race the DB query against an 8-second timeout so a paused/slow Supabase
-  // project never hangs the app indefinitely.
-  const timeoutPromise = new Promise<null>(resolve =>
-    setTimeout(() => {
-      console.log('[useAuth] fetchProfile timed out for user_id:', userId)
-      resolve(null)
-    }, 8000)
-  )
+  let timeoutId: ReturnType<typeof setTimeout>
 
   const queryPromise = Promise.resolve(
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
+    supabase.from('profiles').select('*').eq('user_id', userId).single()
   )
     .then(({ data, error }) => {
-      if (error) {
-        console.log('[useAuth] fetchProfile query error — code:', error.code, '| message:', error.message)
-        return null
-      }
-      if (!data) {
-        console.log('[useAuth] fetchProfile returned no data (row may not exist)')
-        return null
-      }
+      clearTimeout(timeoutId)
+      if (error || !data) return null
       return data as Profile
     })
-    .catch((err) => {
-      console.log('[useAuth] fetchProfile unexpected error:', err)
+    .catch(() => {
+      clearTimeout(timeoutId)
       return null
     })
+
+  const timeoutPromise = new Promise<null>(resolve => {
+    timeoutId = setTimeout(() => resolve(null), 8000)
+  })
 
   return Promise.race([queryPromise, timeoutPromise])
 }
@@ -58,30 +47,22 @@ export function useAuth(): AuthHook {
 
     // Hard fallback: unblock the UI after 5s no matter what.
     const timeoutId = setTimeout(() => {
-      if (mounted) {
-        console.log('[useAuth] TIMEOUT: 5s elapsed, forcing loading to false')
-        setLoading(false)
-      }
+      if (mounted) setLoading(false)
     }, 5000)
 
     supabase.auth.getSession()
       .then(async ({ data: { session } }) => {
         if (!mounted) return
-        console.log('[useAuth] getSession resolved — user:', session?.user?.email ?? null)
         setUser(session?.user ?? null)
         // Unblock the UI as soon as auth state is known, before profile fetch.
         clearTimeout(timeoutId)
         setLoading(false)
-        console.log('[useAuth] loading set to false (getSession path)')
         if (session?.user) {
-          console.log('[useAuth] profile fetch starting for user_id:', session.user.id)
           const p = await fetchProfile(session.user.id)
-          console.log('[useAuth] profile fetch complete:', p)
           if (mounted) setProfile(p)
         }
       })
-      .catch((err) => {
-        console.log('[useAuth] getSession error:', err)
+      .catch(() => {
         if (mounted) {
           clearTimeout(timeoutId)
           setLoading(false)
@@ -91,16 +72,12 @@ export function useAuth(): AuthHook {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return
-        console.log('[useAuth] onAuthStateChange — event:', _event, '| user:', session?.user?.email ?? null)
         setUser(session?.user ?? null)
-        // Same: unblock before profile fetch so the spinner clears on session change too.
+        // Unblock before profile fetch so the spinner clears on session change too.
         clearTimeout(timeoutId)
         setLoading(false)
-        console.log('[useAuth] loading set to false (onAuthStateChange path)')
         if (session?.user) {
-          console.log('[useAuth] profile fetch starting for user_id:', session.user.id)
           const p = await fetchProfile(session.user.id)
-          console.log('[useAuth] profile fetch complete:', p)
           if (mounted) setProfile(p)
         } else {
           setProfile(null)

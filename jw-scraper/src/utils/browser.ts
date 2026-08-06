@@ -3,7 +3,6 @@ import puppeteerCore from 'puppeteer-core'
 import type { Browser } from 'puppeteer-core'
 import fs from 'fs'
 
-// Common Chrome locations for local Windows development
 const LOCAL_CHROME_PATHS = [
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
@@ -23,20 +22,10 @@ async function getExecutablePath(): Promise<string> {
   return await chromium.executablePath()
 }
 
-// Cached browser instance — avoids re-launching on every request
 let cachedBrowser: Browser | null = null
 
 export async function getBrowser(): Promise<Browser> {
-  // Return cached browser if still connected
-  if (cachedBrowser) {
-    try {
-      // Check it's still alive
-      await cachedBrowser.version()
-      return cachedBrowser
-    } catch {
-      cachedBrowser = null
-    }
-  }
+  if (cachedBrowser) return cachedBrowser
 
   const executablePath = await getExecutablePath()
   cachedBrowser = await puppeteerCore.launch({
@@ -53,8 +42,18 @@ export async function getBrowser(): Promise<Browser> {
     headless: true,
   })
 
-  // Clear cache if browser closes unexpectedly
   cachedBrowser.on('disconnected', () => { cachedBrowser = null })
 
   return cachedBrowser
 }
+
+// Close gracefully on shutdown so Chromium doesn't become a zombie process
+async function closeBrowser() {
+  if (cachedBrowser) {
+    await cachedBrowser.close().catch(() => null)
+    cachedBrowser = null
+  }
+}
+
+process.on('SIGTERM', closeBrowser)
+process.on('SIGINT', closeBrowser)
